@@ -1,0 +1,43 @@
+# Atlas .gitattributes
+# Ensure consistent line endings across platforms
+
+* text=auto eol=lf
+
+# Force binary for these file types
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.svg text eol=lf
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.ttf binary
+
+# Markdown
+*.md text eol=lf
+*.mdx text eol=lf
+
+# Code
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.tf text eol=lf
+*.sql text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+
+# Shell scripts must be LF on all platforms
+*.sh text eol=lf
+*.bash text eol=lf

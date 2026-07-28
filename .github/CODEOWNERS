@@ -1,0 +1,53 @@
+# CODEOWNERS
+# Each line is a file pattern followed by one or more owners.
+# These owners will be automatically added as reviewers.
+
+# Default — Engineering Leads review everything
+*                                   @atlas-engineering-leads
+
+# Company documents — CPO + CTO must review
+docs/00-company/                    @atlas-cpo @atlas-cto
+docs/01-product/                    @atlas-cpo @atlas-cto
+
+# Sprint engineering documents
+docs/03-sprints/                    @atlas-principal-architect @atlas-distinguished-engineer
+
+# ADRs — Principal Architect must review
+docs/04-architecture-decision-records/   @atlas-principal-architect
+
+# Atlas Brain — Brain team owns
+services/project-brain-service/     @atlas-brain-team
+services/knowledge-service/         @atlas-brain-team
+packages/atlas-memory/              @atlas-brain-team
+packages/atlas-rag/                 @atlas-brain-team
+packages/atlas-graphs/              @atlas-brain-team
+
+# Atlas Agents — Agents team owns
+services/agent-service/             @atlas-agents-team
+services/orchestration-service/     @atlas-agents-team
+agents/                             @atlas-agents-team
+
+# Atlas Runtime — Runtime team owns
+services/runtime-service/           @atlas-runtime-team
+services/workflow-service/          @atlas-runtime-team
+
+# Atlas Cloud — Cloud team owns
+services/api-gateway/               @atlas-cloud-team
+services/authentication-service/    @atlas-cloud-team
+services/organization-service/      @atlas-cloud-team
+services/connector-service/         @atlas-cloud-team
+integrations/                       @atlas-cloud-team
+
+# Atlas Governance — Security Architect must review
+services/security-service/          @atlas-security-architect
+services/audit-service/             @atlas-security-architect
+packages/atlas-security/            @atlas-security-architect
+
+# Infrastructure — DevOps team owns
+infrastructure/                     @atlas-devops-team
+
+# Shared packages — Principal Architect reviews
+packages/atlas-sdk/                 @atlas-principal-architect
+packages/atlas-core/                @atlas-principal-architect
+packages/atlas-types/               @atlas-principal-architect
+packages/atlas-events/              @atlas-principal-architect
