@@ -1,23 +1,28 @@
-import React from 'react';
+"use client";
 
-export default async function Home() {
-  let statusText = "Backend Offline";
-  try {
-    const res = await fetch('http://127.0.0.1:8000/health', { cache: 'no-store' });
-    if (res.ok) {
-      statusText = "Atlas Platform Running";
+/**
+ * src/app/page.tsx
+ *
+ * Root page — redirects authenticated users to /dashboard,
+ * and unauthenticated users to /login.
+ */
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+
+export default function RootPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) {
+      router.replace(user ? "/dashboard" : "/login");
     }
-  } catch (error) {
-    console.error("Failed to fetch health endpoint", error);
-  }
+  }, [isLoading, user, router]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-black text-white">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
-          {statusText}
-        </h1>
-      </div>
-    </main>
+    <div className="dashboard-loading">
+      <span className="spinner-ring" />
+    </div>
   );
 }
