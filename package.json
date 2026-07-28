@@ -1,0 +1,16 @@
+{
+  "name": "atlas",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm -C apps/atlas-web dev\" \"pnpm -C services/api dev\"",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "concurrently": "^8.2.2",
+    "tsup": "^8.0.2",
+    "typescript": "^5.0.0"
+  }
+}
