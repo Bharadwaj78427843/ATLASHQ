@@ -9,6 +9,7 @@
  */
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardPage() {
@@ -68,10 +69,13 @@ export default function DashboardPage() {
           <h1 className="hero-title">
             Welcome, <span className="hero-name">{displayName}</span>
           </h1>
-          <p className="hero-subtitle">
+          <p className="hero-subtitle" style={{ marginBottom: "24px" }}>
             Your session is active and verified via{" "}
             <code className="code-pill">GET /auth/me</code>
           </p>
+          <Link href="/organizations" className="btn-primary" style={{ display: "inline-flex", width: "auto", textDecoration: "none", fontSize: "15px", padding: "12px 24px" }}>
+            View Organizations →
+          </Link>
         </div>
 
         {/* ── User card ────────────────────────────────────────── */}
