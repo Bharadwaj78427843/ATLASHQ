@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useWorkspace } from "@/hooks/useWorkspaces";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizationMembers } from "@/hooks/useOrganizationMembers";
+import { ProjectsList } from "@/components/ProjectsList";
 
 export default function WorkspaceDetailsPage({ params }: { params: Promise<{ id: string, workspaceId: string }> }) {
   const resolvedParams = use(params);
@@ -152,6 +153,8 @@ export default function WorkspaceDetailsPage({ params }: { params: Promise<{ id:
           </>
         )}
       </div>
+
+      <ProjectsList orgId={orgId} workspaceId={workspaceId} />
     </div>
   );
 }
