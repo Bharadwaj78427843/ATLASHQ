@@ -49,7 +49,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
+export async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
@@ -78,7 +78,7 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-function withAuth(token: string): HeadersInit {
+export function withAuth(token: string): HeadersInit {
   return { Authorization: `Bearer ${token}` };
 }
 
@@ -105,293 +105,128 @@ export const api = {
 };
 
 // ── Organizations ───────────────────────────────────────────────────────────
+import {
+  OrganizationRead,
+  OrganizationList,
+  OrganizationCreate,
+  OrganizationUpdate,
+  OrganizationMember,
+  OrganizationMemberList,
+  MemberRole,
+  MemberStatus,
+} from "../features/organizations/types";
+import { orgApi, orgMembersApi } from "../features/organizations/api";
 
-export interface OrganizationRead {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  logo_url: string | null;
-  website: string | null;
-  owner_id: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface OrganizationList {
-  items: OrganizationRead[];
-  total: number;
-  skip: number;
-  limit: number;
-}
-
-export interface OrganizationCreate {
-  name: string;
-  slug: string;
-  description?: string;
-  logo_url?: string;
-  website?: string;
-}
-
-export interface OrganizationUpdate {
-  name?: string;
-  description?: string;
-  logo_url?: string;
-  website?: string;
-}
-
-export type MemberRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
-export type MemberStatus = "INVITED" | "ACTIVE" | "SUSPENDED" | "LEFT";
-
-export interface OrganizationMember {
-  id: string;
-  organization_id: string;
-  user_id: string;
-  role: MemberRole;
-  status: MemberStatus;
-  invited_by_id: string | null;
-  joined_at: string | null;
-  created_at: string;
-  updated_at: string;
-  user: UserRead;
-}
-
-export interface OrganizationMemberList {
-  items: OrganizationMember[];
-  total: number;
-  skip: number;
-  limit: number;
-}
-
-export const orgApi = {
-  list(token: string, skip = 0, limit = 50): Promise<OrganizationList> {
-    return request<OrganizationList>(`/organizations/?skip=${skip}&limit=${limit}`, {
-      headers: withAuth(token),
-    });
-  },
-
-  listMine(token: string, skip = 0, limit = 50): Promise<OrganizationList> {
-    return request<OrganizationList>(`/organizations/me?skip=${skip}&limit=${limit}`, {
-      headers: withAuth(token),
-    });
-  },
-
-  get(token: string, id: string): Promise<OrganizationRead> {
-    return request<OrganizationRead>(`/organizations/${id}`, {
-      headers: withAuth(token),
-    });
-  },
-
-  create(token: string, payload: OrganizationCreate): Promise<OrganizationRead> {
-    return request<OrganizationRead>("/organizations/", {
-      method: "POST",
-      headers: withAuth(token),
-      body: JSON.stringify(payload),
-    });
-  },
-
-  update(token: string, id: string, payload: OrganizationUpdate): Promise<OrganizationRead> {
-    return request<OrganizationRead>(`/organizations/${id}`, {
-      method: "PATCH",
-      headers: withAuth(token),
-      body: JSON.stringify(payload),
-    });
-  },
-
-  delete(token: string, id: string): Promise<void> {
-    return request<void>(`/organizations/${id}`, {
-      method: "DELETE",
-      headers: withAuth(token),
-    });
-  },
+export type {
+  OrganizationRead,
+  OrganizationList,
+  OrganizationCreate,
+  OrganizationUpdate,
+  OrganizationMember,
+  OrganizationMemberList,
+  MemberRole,
+  MemberStatus,
 };
+export { orgApi, orgMembersApi };
 
-export const orgMembersApi = {
-  list(token: string, orgId: string, skip = 0, limit = 50): Promise<OrganizationMemberList> {
-    return request<OrganizationMemberList>(`/organizations/${orgId}/members/?skip=${skip}&limit=${limit}`, {
-      headers: withAuth(token),
-    });
-  },
 
-  invite(token: string, orgId: string, email: string, role: MemberRole = "MEMBER"): Promise<OrganizationMember> {
-    return request<OrganizationMember>(`/organizations/${orgId}/members/invite`, {
-      method: "POST",
-      headers: withAuth(token),
-      body: JSON.stringify({ email, role }),
-    });
-  },
-
-  updateRole(token: string, orgId: string, memberId: string, role: MemberRole): Promise<OrganizationMember> {
-    return request<OrganizationMember>(`/organizations/${orgId}/members/${memberId}`, {
-      method: "PATCH",
-      headers: withAuth(token),
-      body: JSON.stringify({ role }),
-    });
-  },
-
-  remove(token: string, orgId: string, memberId: string): Promise<void> {
-    return request<void>(`/organizations/${orgId}/members/${memberId}`, {
-      method: "DELETE",
-      headers: withAuth(token),
-    });
-  },
-
-  acceptInvite(token: string, orgId: string, memberId: string): Promise<OrganizationMember> {
-    return request<OrganizationMember>(`/organizations/${orgId}/members/${memberId}/accept`, {
-      method: "POST",
-      headers: withAuth(token),
-    });
-  },
-
-  rejectInvite(token: string, orgId: string, memberId: string): Promise<void> {
-    return request<void>(`/organizations/${orgId}/members/${memberId}/reject`, {
-      method: "POST",
-      headers: withAuth(token),
-    });
-  },
-
-  transferOwnership(token: string, orgId: string, targetUserId: string): Promise<void> {
-    return request<void>(`/organizations/${orgId}/members/transfer-owner`, {
-      method: "POST",
-      headers: withAuth(token),
-      body: JSON.stringify({ target_user_id: targetUserId }),
-    });
-  },
-};
-
-// ── Workspaces ──────────────────────────────────────────────────────────────
-
-export interface WorkspaceRead {
-  id: string;
-  organization_id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface WorkspaceCreate {
-  name: string;
-  slug: string;
-  description?: string;
-}
-
-export interface WorkspaceUpdate {
-  name?: string;
-  description?: string;
-  is_active?: boolean;
-}
-
-export interface WorkspaceList {
-  items: WorkspaceRead[];
-  total: number;
-  skip: number;
-  limit: number;
-}
-
-export const workspacesApi = {
-  list(token: string, orgId: string, skip = 0, limit = 50): Promise<WorkspaceList> {
-    return request<WorkspaceList>(`/organizations/${orgId}/workspaces/?skip=${skip}&limit=${limit}`, {
-      headers: withAuth(token),
-    });
-  },
-
-  get(token: string, orgId: string, workspaceId: string): Promise<WorkspaceRead> {
-    return request<WorkspaceRead>(`/organizations/${orgId}/workspaces/${workspaceId}`, {
-      headers: withAuth(token),
-    });
-  },
-
-  create(token: string, orgId: string, payload: WorkspaceCreate): Promise<WorkspaceRead> {
-    return request<WorkspaceRead>(`/organizations/${orgId}/workspaces/`, {
-      method: "POST",
-      headers: withAuth(token),
-      body: JSON.stringify(payload),
-    });
-  },
-
-  update(token: string, orgId: string, workspaceId: string, payload: WorkspaceUpdate): Promise<WorkspaceRead> {
-    return request<WorkspaceRead>(`/organizations/${orgId}/workspaces/${workspaceId}`, {
-      method: "PATCH",
-      headers: withAuth(token),
-      body: JSON.stringify(payload),
-    });
-  },
-
-  delete(token: string, orgId: string, workspaceId: string): Promise<void> {
-    return request<void>(`/organizations/${orgId}/workspaces/${workspaceId}`, {
-      method: "DELETE",
-      headers: withAuth(token),
-    });
-  },
-};
-
-// ── Projects ────────────────────────────────────────────────────────────────
-
-export interface ProjectRead {
+export interface KnowledgeSource {
   id: string;
   workspace_id: string;
+  project_id: string | null;
   name: string;
-  description: string | null;
-  is_active: boolean;
+  source_type: string;
+  storage_path: string | null;
+  status: string;
+  size_bytes: number | null;
+  uploaded_by: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface ProjectCreate {
-  name: string;
-  description?: string;
+export interface IndexJob {
+  id: string;
+  source_id: string;
+  status: string;
+  progress: number;
+  started_at: string | null;
+  completed_at: string | null;
+  error_message: string | null;
 }
 
-export interface ProjectUpdate {
-  name?: string;
-  description?: string;
-  is_active?: boolean;
+export interface SearchResultSnippet {
+  source_id: string;
+  source_name: string;
+  document_id: string;
+  filename: string;
+  content: string;
+  score: number;
 }
 
-export interface ProjectList {
-  items: ProjectRead[];
-  total: number;
-  skip: number;
-  limit: number;
+export interface SearchResponse {
+  query: string;
+  results: SearchResultSnippet[];
 }
 
-export const projectsApi = {
-  list(token: string, workspaceId: string, skip = 0, limit = 50): Promise<ProjectList> {
-    return request<ProjectList>(`/workspaces/${workspaceId}/projects/?skip=${skip}&limit=${limit}`, {
-      headers: withAuth(token),
-    });
-  },
+export const knowledgeApi = {
+  upload(token: string, workspaceId: string, file: File, projectId?: string): Promise<KnowledgeSource> {
+    const formData = new FormData();
+    formData.append("workspace_id", workspaceId);
+    if (projectId) formData.append("project_id", projectId);
+    formData.append("file", file);
 
-  get(token: string, workspaceId: string, projectId: string): Promise<ProjectRead> {
-    return request<ProjectRead>(`/workspaces/${workspaceId}/projects/${projectId}`, {
-      headers: withAuth(token),
-    });
-  },
-
-  create(token: string, workspaceId: string, payload: ProjectCreate): Promise<ProjectRead> {
-    return request<ProjectRead>(`/workspaces/${workspaceId}/projects/`, {
+    return request<KnowledgeSource>("/knowledge/upload", {
       method: "POST",
-      headers: withAuth(token),
-      body: JSON.stringify(payload),
+      headers: { Authorization: `Bearer ${token}` }, // Do not set Content-Type to application/json
+      body: formData,
     });
   },
 
-  update(token: string, workspaceId: string, projectId: string, payload: ProjectUpdate): Promise<ProjectRead> {
-    return request<ProjectRead>(`/workspaces/${workspaceId}/projects/${projectId}`, {
-      method: "PATCH",
+  listSources(token: string, workspaceId: string): Promise<KnowledgeSource[]> {
+    return request<KnowledgeSource[]>(`/knowledge/sources?workspace_id=${workspaceId}`, {
       headers: withAuth(token),
-      body: JSON.stringify(payload),
     });
   },
 
-  delete(token: string, workspaceId: string, projectId: string): Promise<void> {
-    return request<void>(`/workspaces/${workspaceId}/projects/${projectId}`, {
+  deleteSource(token: string, sourceId: string): Promise<void> {
+    return request<void>(`/knowledge/sources/${sourceId}`, {
       method: "DELETE",
       headers: withAuth(token),
+    });
+  },
+
+  listJobs(token: string, sourceId: string): Promise<IndexJob[]> {
+    return request<IndexJob[]>(`/knowledge/jobs?source_id=${sourceId}`, {
+      headers: withAuth(token),
+    });
+  },
+
+  search(token: string, workspaceId: string, query: string, limit = 10, projectId?: string): Promise<SearchResponse> {
+    return request<SearchResponse>(`/knowledge/search?workspace_id=${workspaceId}`, {
+      method: "POST",
+      headers: withAuth(token),
+      body: JSON.stringify({ query, limit, project_id: projectId }),
+    });
+  },
+
+  connectRepository(
+    token: string,
+    workspaceId: string,
+    provider: string,
+    repository: string,
+    branch: string,
+    projectId?: string
+  ): Promise<KnowledgeSource> {
+    return request<KnowledgeSource>("/knowledge/repositories/connect", {
+      method: "POST",
+      headers: withAuth(token),
+      body: JSON.stringify({
+        workspace_id: workspaceId,
+        provider,
+        repository,
+        branch,
+        project_id: projectId,
+      }),
     });
   },
 };

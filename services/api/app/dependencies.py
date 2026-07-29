@@ -40,3 +40,50 @@ async def get_current_user(
 
     auth_service = AuthService(session)
     return await auth_service.get_user_by_id(subject)
+
+
+# ---------------------------------------------------------------------------
+# AI Dependencies
+# ---------------------------------------------------------------------------
+from fastapi import Request
+from app.ai.sdk.sdk import AtlasAISDK
+from app.ai.registry.registry import ProviderRegistry
+from app.ai.orchestration.knowledge_orchestrator import KnowledgeOrchestrator
+from app.ai.prompts.manager import PromptManager
+
+
+def get_ai_sdk(request: Request) -> AtlasAISDK:
+    """Extract the initialized AI SDK from the FastAPI application state."""
+    if not hasattr(request.app.state, "ai_sdk"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI SDK is not initialized."
+        )
+    return request.app.state.ai_sdk
+
+
+def get_provider_registry(request: Request) -> ProviderRegistry:
+    if not hasattr(request.app.state, "ai_registry"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Provider Registry is not initialized."
+        )
+    return request.app.state.ai_registry
+
+
+def get_knowledge_orchestrator(request: Request) -> KnowledgeOrchestrator:
+    if not hasattr(request.app.state, "ai_orchestrator"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Knowledge Orchestrator is not initialized."
+        )
+    return request.app.state.ai_orchestrator
+
+
+def get_prompt_manager(request: Request) -> PromptManager:
+    if not hasattr(request.app.state, "ai_prompt_manager"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Prompt Manager is not initialized."
+        )
+    return request.app.state.ai_prompt_manager

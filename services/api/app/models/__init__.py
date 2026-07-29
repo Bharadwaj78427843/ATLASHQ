@@ -4,5 +4,12 @@ from app.models.organization import Organization
 from app.models.organization_member import OrganizationMember
 from app.models.workspace import Workspace
 from app.models.project import Project
+from app.models.environment import Environment
+from app.models.knowledge import KnowledgeSource, KnowledgeDocument, DocumentChunk, Embedding, IndexJob
 
-__all__ = ["Base", "User", "Organization", "OrganizationMember", "Workspace", "Project"]
+__all__ = [
+    "Base", "User", "Organization", "OrganizationMember", 
+    "Workspace", "Project", "Environment",
+    "KnowledgeSource", "KnowledgeDocument", "DocumentChunk", 
+    "Embedding", "IndexJob"
+]

@@ -1,11 +1,9 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-import os
+from app.core.config import get_settings
 
-# Default to asyncpg url for PostgreSQL
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql+asyncpg://atlas:atlas_secret@localhost:5432/atlas_db"
-)
+# Always source DATABASE_URL from the pydantic-settings singleton so that
+# values in .env are honoured consistently (os.getenv bypasses .env loading).
+DATABASE_URL = get_settings().DATABASE_URL
 
 # For testing, we might use sqlite. We detect it to set proper engine args.
 is_sqlite = DATABASE_URL.startswith("sqlite")
@@ -24,5 +22,16 @@ async_session = async_sessionmaker(
 )
 
 async def get_db():
+    """FastAPI dependency that yields a transactional AsyncSession.
+
+    On a clean return the session is committed.
+    On any exception the session is rolled back before re-raising,
+    so partial writes are never silently discarded.
+    """
     async with async_session() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

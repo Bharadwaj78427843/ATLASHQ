@@ -5,6 +5,7 @@ description = "Atlas Platform Backend API"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi[all]>=0.111.0",
+    "pydantic-settings>=2.0.0",
     "uvicorn>=0.30.1",
     "sqlalchemy",
     "alembic",
@@ -15,7 +16,11 @@ dependencies = [
     "aiosqlite",
     "argon2-cffi>=23.1.0",
     "python-jose[cryptography]>=3.3.0",
-    "httpx>=0.27.0"
+    "httpx>=0.27.0",
+    "pyyaml>=6.0",
+    "openai>=1.54.0",
+    "qdrant-client>=1.12.0",
+    "pypdf>=4.3.1"
 ]
 
 [tool.uv]
