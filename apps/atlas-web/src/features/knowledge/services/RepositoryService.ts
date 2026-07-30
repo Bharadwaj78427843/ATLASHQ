@@ -11,4 +11,8 @@ export const RepositoryService = {
   ): Promise<KnowledgeSource> {
     return knowledgeApi.connectRepository(workspaceId, provider, repository, branch, projectId);
   },
+
+  async syncRepository(sourceId: string): Promise<KnowledgeSource> {
+    return knowledgeApi.syncRepository(sourceId);
+  },
 };

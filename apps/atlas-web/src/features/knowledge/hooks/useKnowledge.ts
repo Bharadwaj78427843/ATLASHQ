@@ -46,6 +46,12 @@ export function useKnowledge(workspaceId: string, projectId?: string) {
     return result;
   };
 
+  const syncRepository = async (sourceId: string) => {
+    const result = await RepositoryService.syncRepository(sourceId);
+    await fetchSources();
+    return result;
+  };
+
   const deleteSource = async (sourceId: string) => {
     await SourceService.deleteSource(sourceId);
     await fetchSources();
@@ -63,6 +69,7 @@ export function useKnowledge(workspaceId: string, projectId?: string) {
     fetchSources,
     uploadDocument,
     connectRepository,
+    syncRepository,
     deleteSource,
     search,
   };

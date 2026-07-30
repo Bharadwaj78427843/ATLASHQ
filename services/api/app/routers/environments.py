@@ -15,7 +15,8 @@ from app.services.environment import EnvironmentService
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/projects/{project_id}/environments", tags=["environments"])
 
-@router.post("/", response_model=EnvironmentRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=EnvironmentRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=EnvironmentRead, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_environment(
     workspace_id: UUID,
     project_id: UUID,
@@ -25,7 +26,8 @@ async def create_environment(
 ):
     return await EnvironmentService(session).create_environment(current_user, workspace_id, project_id, payload)
 
-@router.get("/", response_model=EnvironmentList)
+@router.get("", response_model=EnvironmentList)
+@router.get("/", response_model=EnvironmentList, include_in_schema=False)
 async def list_environments(
     workspace_id: UUID,
     project_id: UUID,

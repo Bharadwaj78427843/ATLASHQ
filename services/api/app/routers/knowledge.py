@@ -10,6 +10,8 @@ from app.models.user import User
 from app.repositories.knowledge import KnowledgeRepository
 from app.ai.orchestration.knowledge_orchestrator import KnowledgeOrchestrator
 from app.services.knowledge import UploadService, StorageService, IndexingService, SearchService, RepositoryService
+from app.services.git_service import GitCloneService
+from app.services.repository_indexer import RepositoryIndexer
 from app.schemas.knowledge import KnowledgeSourceResponse, IndexJobResponse, SearchQuery, SearchResponse, RepositoryConnectRequest
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
@@ -20,10 +22,12 @@ def get_services(
 ):
     repo = KnowledgeRepository(db)
     storage = StorageService()
-    indexing = IndexingService(repo, orchestrator)
+    git_service = GitCloneService()
+    indexer = RepositoryIndexer()
+    indexing = IndexingService(repo, orchestrator, git_service, indexer, storage)
     upload = UploadService(repo, storage, indexing)
     search = SearchService(repo, orchestrator)
-    repo_service = RepositoryService(repo, indexing, orchestrator)
+    repo_service = RepositoryService(repo, indexing)
     return repo, upload, search, repo_service
 
 @router.post("/upload", response_model=KnowledgeSourceResponse)
@@ -64,6 +68,25 @@ async def connect_repository(
         )
         return source
     except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/repositories/{source_id}/sync", response_model=KnowledgeSourceResponse)
+async def sync_repository(
+    source_id: UUID,
+    current_user: User = Depends(get_current_user),
+    services: tuple = Depends(get_services)
+):
+    _, _, _, repo_service = services
+    try:
+        source = await repo_service.sync_repository(source_id)
+        return source
+    except ValueError as e:
+        if "not found" in str(e):
+            raise HTTPException(status_code=404, detail=str(e))
+        if "already in progress" in str(e):
+            raise HTTPException(status_code=409, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

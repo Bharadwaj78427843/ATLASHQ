@@ -112,12 +112,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router)
-app.include_router(auth_router.router)
-app.include_router(orgs_router.router)
-app.include_router(org_members_router.router)
-app.include_router(workspaces_router.router)
-app.include_router(projects_router.router)
-app.include_router(environments_router.router)
-app.include_router(knowledge_router.router)
-app.include_router(ai_router.router)
+ROUTERS = [
+    health.router,
+    auth_router.router,
+    orgs_router.router,
+    org_members_router.router,
+    workspaces_router.router,
+    projects_router.router,
+    environments_router.router,
+    knowledge_router.router,
+    ai_router.router,
+]
+
+# Primary routes consumed by the frontend proxy.
+for router in ROUTERS:
+    app.include_router(router)
+
+# Backward-compatible API namespace for tests and legacy clients.
+for router in ROUTERS:
+    app.include_router(router, prefix="/api")

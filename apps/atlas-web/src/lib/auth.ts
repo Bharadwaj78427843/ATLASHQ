@@ -21,9 +21,6 @@ export function getRefreshToken(): string | null {
 export function setTokens(accessToken: string, refreshToken: string): void {
   localStorage.setItem(ACCESS_KEY, accessToken);
   localStorage.setItem(REFRESH_KEY, refreshToken);
-  // DIAGNOSTIC: confirm storage
-  const stored = localStorage.getItem(ACCESS_KEY);
-  console.log("[AUTH] setTokens() — stored atlas_access_token:", stored ? `${stored.slice(0, 20)}… (length ${stored.length})` : "FAILED TO STORE");
 }
 
 export function clearTokens(): void {

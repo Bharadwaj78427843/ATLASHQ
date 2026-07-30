@@ -33,6 +33,19 @@ class KnowledgeSourceResponse(KnowledgeSourceBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class RepositoryMetadata(BaseModel):
+    provider: str
+    repository_url: str
+    default_branch: str
+    index_status: str
+    last_sync: Optional[datetime] = None
+    languages: Optional[dict] = None
+    frameworks: Optional[list] = None
+    package_managers: Optional[list] = None
+    statistics: Optional[dict] = None
+    directory_summary: Optional[dict] = None
+
+
 # Knowledge Document Schemas
 class KnowledgeDocumentResponse(BaseModel):
     id: UUID

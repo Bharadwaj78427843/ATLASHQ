@@ -6,7 +6,7 @@ SQLAlchemy model for the Environment domain.
 import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Index, Enum
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.db.base import Base
@@ -34,6 +34,4 @@ class Environment(Base):
     )
     is_active = Column(Boolean, default=True, nullable=False)
 
-    __table_args__ = (
-        Index("ix_environments_project_id", "project_id"),
-    )
+    __table_args__ = ()

@@ -7,6 +7,7 @@ export interface KnowledgeSource {
   storage_path: string | null;
   status: string;
   size_bytes: number | null;
+  metadata_json: Record<string, unknown> | null;
   uploaded_by: string;
   created_at: string;
   updated_at: string;

@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, BigInteger, Float
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, BigInteger, Float, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.db.base import Base
+
+JSONBCompat = JSON().with_variant(JSONB, "postgresql")
 
 class KnowledgeSource(Base):
     __tablename__ = "knowledge_sources"
@@ -14,7 +16,7 @@ class KnowledgeSource(Base):
     name = Column(String, nullable=False)
     source_type = Column(String, nullable=False) # e.g. "document", "repository", "url"
     storage_path = Column(String, nullable=True)
-    metadata_json = Column(JSONB, nullable=True)
+    metadata_json = Column(JSONBCompat, nullable=True)
     status = Column(String, nullable=False, default="pending") # "pending", "indexing", "ready", "failed"
     size_bytes = Column(BigInteger, nullable=True)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -38,7 +40,7 @@ class KnowledgeDocument(Base):
     mime_type = Column(String, nullable=False)
     checksum = Column(String, nullable=True)
     pages = Column(Integer, nullable=True)
-    metadata_json = Column(JSONB, nullable=True)
+    metadata_json = Column(JSONBCompat, nullable=True)
 
     source = relationship("KnowledgeSource", back_populates="documents")
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")

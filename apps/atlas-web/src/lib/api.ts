@@ -51,6 +51,11 @@ export class ApiError extends Error {
   }
 }
 
+type ValidationErrorItem = {
+  loc?: Array<string | number>
+  msg?: string
+}
+
 export async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -61,13 +66,7 @@ export async function request<T>(
     "Content-Type": "application/json",
   };
 
-  // ── DIAGNOSTIC LOG 1: token retrieval ────────────────────────────────────
   const token = getAccessToken();
-  console.log("[AUTH] getAccessToken() =", token ? `${token.slice(0, 20)}…` : "NULL — no token in localStorage");
-  console.log("[AUTH] localStorage key =", "atlas_access_token");
-  if (typeof window !== "undefined") {
-    console.log("[AUTH] raw localStorage value =", window.localStorage.getItem("atlas_access_token") ? "EXISTS" : "MISSING");
-  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -78,30 +77,35 @@ export async function request<T>(
     delete headers["Content-Type"];
   }
 
-  // ── DIAGNOSTIC LOG 2: headers before fetch ────────────────────────────────
-  console.log("[API] →", options.method ?? "GET", url);
-  console.log("[API] headers built =", JSON.stringify(headers));
-  console.log("[API] options.headers =", options.headers);
-  console.log("[API] Authorization present?", "Authorization" in headers);
-
   // Check if options.headers would clobber Authorization
   const optHeaders = options.headers ?? {};
   const mergedHeaders = { ...headers, ...optHeaders };
-  console.log("[API] final merged headers =", JSON.stringify(mergedHeaders));
 
   const res = await fetch(url, {
     ...options,
     headers: mergedHeaders,
   });
 
-  // ── DIAGNOSTIC LOG 3: response ─────────────────────────────────────────────
-  console.log("[API] ←", res.status, res.url);
-
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {
       const body = await res.json();
-      detail = body?.detail ?? detail;
+      if (body?.detail) {
+        if (typeof body.detail === "string") {
+          detail = body.detail;
+        } else if (Array.isArray(body.detail)) {
+          detail = body.detail
+            .map((item: unknown) => {
+              const error = item as ValidationErrorItem
+              const location = Array.isArray(error.loc) ? error.loc.join(".") : "Field"
+              const message = typeof error.msg === "string" ? error.msg : "Invalid value"
+              return `${location}: ${message}`
+            })
+            .join(", ");
+        } else {
+          detail = JSON.stringify(body.detail);
+        }
+      }
     } catch {
       /* ignore parse error */
     }
@@ -169,6 +173,7 @@ export interface KnowledgeSource {
   storage_path: string | null;
   status: string;
   size_bytes: number | null;
+  metadata_json: Record<string, unknown> | null;
   uploaded_by: string;
   created_at: string;
   updated_at: string;
@@ -248,6 +253,12 @@ export const knowledgeApi = {
         branch,
         project_id: projectId,
       }),
+    });
+  },
+
+  syncRepository(sourceId: string): Promise<KnowledgeSource> {
+    return request<KnowledgeSource>(`/knowledge/repositories/${sourceId}/sync`, {
+      method: "POST",
     });
   },
 };

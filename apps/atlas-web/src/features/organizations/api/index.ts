@@ -45,7 +45,7 @@ export const orgApi = {
 
 export const orgMembersApi = {
   list(orgId: string, skip = 0, limit = 50): Promise<OrganizationMemberList> {
-    return request<OrganizationMemberList>(`/organizations/${orgId}/members?skip=${skip}&limit=${limit}`);
+    return request<OrganizationMemberList>(`/organizations/${orgId}/members/?skip=${skip}&limit=${limit}`);
   },
 
   invite(orgId: string, email: string, role: MemberRole = "MEMBER"): Promise<OrganizationMember> {

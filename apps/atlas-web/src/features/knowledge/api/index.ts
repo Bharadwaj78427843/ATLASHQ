@@ -57,4 +57,10 @@ export const knowledgeApi = {
       }),
     });
   },
+
+  syncRepository(sourceId: string): Promise<KnowledgeSource> {
+    return request<KnowledgeSource>(`/knowledge/repositories/${sourceId}/sync`, {
+      method: "POST",
+    });
+  },
 };

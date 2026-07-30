@@ -16,7 +16,8 @@ from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceRea
 
 router = APIRouter(prefix="/organizations/{org_id}/workspaces", tags=["Workspaces"])
 
-@router.post("/", response_model=WorkspaceRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=WorkspaceRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=WorkspaceRead, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_workspace(
     org_id: UUID,
     payload: WorkspaceCreate,
@@ -26,7 +27,8 @@ async def create_workspace(
     """Create a new workspace within an organization."""
     return await WorkspaceService(db).create_workspace(current_user, org_id, payload)
 
-@router.get("/", response_model=WorkspaceList)
+@router.get("", response_model=WorkspaceList)
+@router.get("/", response_model=WorkspaceList, include_in_schema=False)
 async def list_workspaces(
     org_id: UUID,
     skip: int = Query(0, ge=0),

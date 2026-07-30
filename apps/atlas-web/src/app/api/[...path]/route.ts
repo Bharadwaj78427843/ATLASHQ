@@ -16,13 +16,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = "http://127.0.0.1:8000";
 
 async function handler(req: NextRequest): Promise<NextResponse> {
   // Reconstruct the backend URL from the request URL.
-  // req.nextUrl.pathname = /api/organizations/  →  strip /api prefix  →  /organizations/
+  // We must use `new URL(req.url).pathname` instead of `req.nextUrl.pathname`
+  // because `req.nextUrl.pathname` automatically strips trailing slashes, which breaks FastAPI routing.
   const apiPrefix = "/api";
-  const backendPath = req.nextUrl.pathname.slice(apiPrefix.length);
+  const rawPathname = new URL(req.url).pathname;
+  const backendPath = rawPathname.slice(apiPrefix.length);
   const search = req.nextUrl.search ?? "";
   const targetUrl = `${BACKEND_URL}${backendPath}${search}`;
 

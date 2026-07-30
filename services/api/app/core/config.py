@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Atlas API"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
+    STORAGE_BASE_PATH: str = "storage"
 
 
 @lru_cache

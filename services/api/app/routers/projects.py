@@ -16,7 +16,8 @@ from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectRead, Proje
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/projects", tags=["Projects"])
 
-@router.post("/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ProjectRead, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_project(
     workspace_id: UUID,
     payload: ProjectCreate,
@@ -26,7 +27,8 @@ async def create_project(
     """Create a new project within a workspace."""
     return await ProjectService(db).create_project(current_user, workspace_id, payload)
 
-@router.get("/", response_model=ProjectList)
+@router.get("", response_model=ProjectList)
+@router.get("/", response_model=ProjectList, include_in_schema=False)
 async def list_projects(
     workspace_id: UUID,
     skip: int = Query(0, ge=0),
