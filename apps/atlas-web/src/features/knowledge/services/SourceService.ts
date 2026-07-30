@@ -2,15 +2,15 @@ import { knowledgeApi } from "../api";
 import { KnowledgeSource, IndexJob } from "../types";
 
 export const SourceService = {
-  async listSources(token: string, workspaceId: string): Promise<KnowledgeSource[]> {
-    return knowledgeApi.listSources(token, workspaceId);
+  async listSources(workspaceId: string): Promise<KnowledgeSource[]> {
+    return knowledgeApi.listSources(workspaceId);
   },
 
-  async deleteSource(token: string, sourceId: string): Promise<void> {
-    return knowledgeApi.deleteSource(token, sourceId);
+  async deleteSource(sourceId: string): Promise<void> {
+    return knowledgeApi.deleteSource(sourceId);
   },
 
-  async listJobs(token: string, sourceId: string): Promise<IndexJob[]> {
-    return knowledgeApi.listJobs(token, sourceId);
+  async listJobs(sourceId: string): Promise<IndexJob[]> {
+    return knowledgeApi.listJobs(sourceId);
   },
 };

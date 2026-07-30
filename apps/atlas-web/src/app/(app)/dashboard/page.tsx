@@ -119,6 +119,7 @@ const AiCommandInput = React.memo(() => {
     </GlassPanel>
   );
 });
+AiCommandInput.displayName = "AiCommandInput";
 
 // 2. Metrics Grid (Memoized)
 const MetricsGrid = React.memo(() => (
@@ -130,6 +131,7 @@ const MetricsGrid = React.memo(() => (
     <MetricCard title="Open Issues" value="12" trend="4 this week" trendDirection="down" icon={<AlertCircle className="w-4 h-4 text-red-500" />} />
   </div>
 ));
+MetricsGrid.displayName = "MetricsGrid";
 
 // 3. Information Columns (Memoized)
 const InfoColumns = React.memo(() => (
@@ -220,6 +222,7 @@ const InfoColumns = React.memo(() => (
     </GlassPanel>
   </div>
 ));
+InfoColumns.displayName = "InfoColumns";
 
 
 // ─── MAIN PAGE COMPONENT ─────────────────────────────────────────────────────

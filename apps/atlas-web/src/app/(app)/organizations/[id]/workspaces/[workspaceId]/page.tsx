@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, FormEvent, use } from "react";
-import { useRouter } from "next/navigation";
+
 import Link from "next/link";
 import { useWorkspace } from "@/features/workspaces";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +13,7 @@ export default function WorkspaceDetailsPage({ params }: { params: Promise<{ id:
   const orgId = resolvedParams.id;
   const workspaceId = resolvedParams.workspaceId;
 
-  const router = useRouter();
+
   const { user } = useAuth();
   const { data: members } = useOrganizationMembers(orgId);
   const { data: workspace, loading, error, fetchWorkspace, updateWorkspace } = useWorkspace(orgId, workspaceId);
@@ -51,8 +51,9 @@ export default function WorkspaceDetailsPage({ params }: { params: Promise<{ id:
         description: form.description || undefined,
       });
       setIsEditing(false);
-    } catch (err: any) {
-      setEditError(err.message || "Failed to update workspace");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update workspace";
+      setEditError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

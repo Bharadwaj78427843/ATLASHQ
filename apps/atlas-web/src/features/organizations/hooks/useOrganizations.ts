@@ -8,7 +8,6 @@ import {
   OrganizationCreate,
   OrganizationUpdate,
 } from "../types";
-import { getAccessToken } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 
 export function useOrganizations(type: "all" | "mine" = "all") {
@@ -19,15 +18,9 @@ export function useOrganizations(type: "all" | "mine" = "all") {
   const fetchOrgs = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const token = getAccessToken();
-    if (!token) {
-      setError("Not authenticated");
-      setIsLoading(false);
-      return;
-    }
 
     try {
-      const res = await OrganizationService.getOrganizations(token, type);
+      const res = await OrganizationService.getOrganizations(type);
       setData(res);
     } catch (err) {
       setError(
@@ -39,6 +32,7 @@ export function useOrganizations(type: "all" | "mine" = "all") {
   }, [type]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOrgs();
   }, [fetchOrgs]);
 
@@ -53,15 +47,9 @@ export function useOrganization(id: string) {
   const fetchOrg = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const token = getAccessToken();
-    if (!token) {
-      setError("Not authenticated");
-      setIsLoading(false);
-      return;
-    }
 
     try {
-      const res = await OrganizationService.getOrganization(token, id);
+      const res = await OrganizationService.getOrganization(id);
       setData(res);
     } catch (err) {
       setError(
@@ -73,21 +61,20 @@ export function useOrganization(id: string) {
   }, [id]);
 
   useEffect(() => {
-    if (id) fetchOrg();
+    if (id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchOrg();
+    }
   }, [fetchOrg, id]);
 
   const update = async (payload: OrganizationUpdate) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    const updated = await OrganizationService.updateOrganization(token, id, payload);
+    const updated = await OrganizationService.updateOrganization(id, payload);
     setData(updated);
     return updated;
   };
 
   const remove = async () => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    await OrganizationService.deleteOrganization(token, id);
+    await OrganizationService.deleteOrganization(id);
     setData(null);
   };
 
@@ -101,15 +88,9 @@ export function useCreateOrganization() {
   const create = async (payload: OrganizationCreate) => {
     setIsSubmitting(true);
     setError(null);
-    const token = getAccessToken();
-    if (!token) {
-      setError("Not authenticated");
-      setIsSubmitting(false);
-      throw new Error("Not authenticated");
-    }
 
     try {
-      const res = await OrganizationService.createOrganization(token, payload);
+      const res = await OrganizationService.createOrganization(payload);
       return res;
     } catch (err) {
       const msg =

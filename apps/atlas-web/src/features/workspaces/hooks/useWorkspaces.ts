@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { WorkspaceService } from "../services";
 import { WorkspaceList, WorkspaceRead, WorkspaceCreate, WorkspaceUpdate } from "../types";
-import { getAccessToken } from "@/lib/auth";
 
 export function useWorkspaces(orgId: string) {
   const [data, setData] = useState<WorkspaceList | null>(null);
@@ -11,36 +10,33 @@ export function useWorkspaces(orgId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchWorkspaces = useCallback(async (skip = 0, limit = 50) => {
-    const token = getAccessToken();
-    if (!token || !orgId) return;
+    if (!orgId) return;
     try {
       setLoading(true);
       setError(null);
-      const result = await WorkspaceService.getWorkspaces(token, orgId, skip, limit);
+      const result = await WorkspaceService.getWorkspaces(orgId, skip, limit);
       setData(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch workspaces");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch workspaces";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   }, [orgId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchWorkspaces();
   }, [fetchWorkspaces]);
 
   const createWorkspace = async (payload: WorkspaceCreate) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    const result = await WorkspaceService.createWorkspace(token, orgId, payload);
+    const result = await WorkspaceService.createWorkspace(orgId, payload);
     await fetchWorkspaces();
     return result;
   };
 
   const deleteWorkspace = async (workspaceId: string) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    await WorkspaceService.deleteWorkspace(token, orgId, workspaceId);
+    await WorkspaceService.deleteWorkspace(orgId, workspaceId);
     await fetchWorkspaces();
   };
 
@@ -60,15 +56,15 @@ export function useWorkspace(orgId: string, workspaceId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchWorkspace = useCallback(async () => {
-    const token = getAccessToken();
-    if (!token || !orgId || !workspaceId) return;
+    if (!orgId || !workspaceId) return;
     try {
       setLoading(true);
       setError(null);
-      const result = await WorkspaceService.getWorkspace(token, orgId, workspaceId);
+      const result = await WorkspaceService.getWorkspace(orgId, workspaceId);
       setData(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch workspace");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch workspace";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,14 +72,13 @@ export function useWorkspace(orgId: string, workspaceId: string) {
 
   useEffect(() => {
     if (orgId && workspaceId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchWorkspace();
     }
   }, [fetchWorkspace, orgId, workspaceId]);
 
   const updateWorkspace = async (payload: WorkspaceUpdate) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    const result = await WorkspaceService.updateWorkspace(token, orgId, workspaceId, payload);
+    const result = await WorkspaceService.updateWorkspace(orgId, workspaceId, payload);
     setData(result);
     return result;
   };

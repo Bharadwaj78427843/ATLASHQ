@@ -3,13 +3,12 @@ import { KnowledgeSource } from "../types";
 
 export const RepositoryService = {
   async connectRepository(
-    token: string,
     workspaceId: string,
     provider: string,
     repository: string,
     branch: string,
     projectId?: string
   ): Promise<KnowledgeSource> {
-    return knowledgeApi.connectRepository(token, workspaceId, provider, repository, branch, projectId);
+    return knowledgeApi.connectRepository(workspaceId, provider, repository, branch, projectId);
   },
 };

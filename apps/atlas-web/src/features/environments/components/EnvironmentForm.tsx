@@ -23,8 +23,9 @@ export function EnvironmentForm({ orgId, workspaceId, projectId }: { orgId: stri
     try {
       await createEnvironment(form);
       router.push(`/organizations/${orgId}/workspaces/${workspaceId}/projects/${projectId}`);
-    } catch (err: any) {
-      setError(err.message || "Failed to create environment");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create environment";
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };

@@ -13,18 +13,19 @@ export default function KnowledgeJobsPage({ params }: { params: Promise<{ id: st
   const [jobs, setJobs] = useState<IndexJob[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     const token = getAccessToken()
     if (!token) return
     try {
+      setIsLoading(true)
       // Fetch all sources first to get their IDs
-      const sourceData = await knowledgeApi.listSources(token, resolvedParams.workspaceId)
+      const sourceData = await knowledgeApi.listSources(resolvedParams.workspaceId)
       setSources(sourceData)
       
       // Fetch jobs for each source
       let allJobs: IndexJob[] = []
       for (const s of sourceData) {
-        const sourceJobs = await knowledgeApi.listJobs(token, s.id)
+        const sourceJobs = await knowledgeApi.listJobs(s.id)
         allJobs = [...allJobs, ...sourceJobs]
       }
       
@@ -36,11 +37,12 @@ export default function KnowledgeJobsPage({ params }: { params: Promise<{ id: st
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [resolvedParams.workspaceId])
 
   useEffect(() => {
-    fetchData()
-  }, [resolvedParams.workspaceId])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchData()
+  }, [fetchData])
 
   const getStatusColor = (status: string) => {
     switch(status) {

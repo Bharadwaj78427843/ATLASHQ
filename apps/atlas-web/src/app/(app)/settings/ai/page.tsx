@@ -6,11 +6,11 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { Settings, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Settings, CheckCircle2, XCircle } from "lucide-react";
 
 export default function AISettingsPage() {
   const [providers, setProviders] = useState<AIProvider[]>([]);
-  const [health, setHealth] = useState<any>(null);
+  const [health, setHealth] = useState<{ status?: string; sdk?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,15 +24,17 @@ export default function AISettingsPage() {
       ]);
       setProviders(providersRes.providers || []);
       setHealth(healthRes);
-    } catch (err: any) {
-      setError("Failed to load AI settings. " + err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError("Failed to load AI settings. " + errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSettings();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchSettings();
   }, []);
 
   return (

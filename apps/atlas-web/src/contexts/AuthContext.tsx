@@ -48,11 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = getAccessToken();
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState((s) => ({ ...s, isLoading: false }));
       return;
     }
     api
-      .me(token)
+      .me()
       .then((user) => setState({ user, isLoading: false, error: null }))
       .catch(() => {
         clearTokens();
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const tokens = await api.login(payload);
       setTokens(tokens.access_token, tokens.refresh_token);
-      const user = await api.me(tokens.access_token);
+      const user = await api.me();
       setState({ user, isLoading: false, error: null });
       router.push("/dashboard");
     } catch (err) {

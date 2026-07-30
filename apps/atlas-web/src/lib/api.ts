@@ -5,6 +5,8 @@
  * All requests go through /api/* which Next.js rewrites to http://localhost:8000/*.
  */
 
+import { getAccessToken } from "./auth";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
 export interface UserRead {
@@ -54,13 +56,46 @@ export async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  // ── DIAGNOSTIC LOG 1: token retrieval ────────────────────────────────────
+  const token = getAccessToken();
+  console.log("[AUTH] getAccessToken() =", token ? `${token.slice(0, 20)}…` : "NULL — no token in localStorage");
+  console.log("[AUTH] localStorage key =", "atlas_access_token");
+  if (typeof window !== "undefined") {
+    console.log("[AUTH] raw localStorage value =", window.localStorage.getItem("atlas_access_token") ? "EXISTS" : "MISSING");
+  }
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Support FormData which overrides Content-Type automatically if we delete it
+  if (options.body instanceof FormData) {
+    delete headers["Content-Type"];
+  }
+
+  // ── DIAGNOSTIC LOG 2: headers before fetch ────────────────────────────────
+  console.log("[API] →", options.method ?? "GET", url);
+  console.log("[API] headers built =", JSON.stringify(headers));
+  console.log("[API] options.headers =", options.headers);
+  console.log("[API] Authorization present?", "Authorization" in headers);
+
+  // Check if options.headers would clobber Authorization
+  const optHeaders = options.headers ?? {};
+  const mergedHeaders = { ...headers, ...optHeaders };
+  console.log("[API] final merged headers =", JSON.stringify(mergedHeaders));
+
   const res = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
+    headers: mergedHeaders,
   });
+
+  // ── DIAGNOSTIC LOG 3: response ─────────────────────────────────────────────
+  console.log("[API] ←", res.status, res.url);
 
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
@@ -78,9 +113,6 @@ export async function request<T>(
   return res.json() as Promise<T>;
 }
 
-export function withAuth(token: string): HeadersInit {
-  return { Authorization: `Bearer ${token}` };
-}
 
 export const api = {
   register(payload: RegisterPayload): Promise<UserRead> {
@@ -97,10 +129,8 @@ export const api = {
     });
   },
 
-  me(accessToken: string): Promise<UserRead> {
-    return request<UserRead>("/auth/me", {
-      headers: withAuth(accessToken),
-    });
+  me(): Promise<UserRead> {
+    return request<UserRead>("/auth/me");
   },
 };
 
@@ -169,7 +199,7 @@ export interface SearchResponse {
 }
 
 export const knowledgeApi = {
-  upload(token: string, workspaceId: string, file: File, projectId?: string): Promise<KnowledgeSource> {
+  upload(workspaceId: string, file: File, projectId?: string): Promise<KnowledgeSource> {
     const formData = new FormData();
     formData.append("workspace_id", workspaceId);
     if (projectId) formData.append("project_id", projectId);
@@ -177,40 +207,32 @@ export const knowledgeApi = {
 
     return request<KnowledgeSource>("/knowledge/upload", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` }, // Do not set Content-Type to application/json
       body: formData,
     });
   },
 
-  listSources(token: string, workspaceId: string): Promise<KnowledgeSource[]> {
-    return request<KnowledgeSource[]>(`/knowledge/sources?workspace_id=${workspaceId}`, {
-      headers: withAuth(token),
-    });
+  listSources(workspaceId: string): Promise<KnowledgeSource[]> {
+    return request<KnowledgeSource[]>(`/knowledge/sources?workspace_id=${workspaceId}`);
   },
 
-  deleteSource(token: string, sourceId: string): Promise<void> {
+  deleteSource(sourceId: string): Promise<void> {
     return request<void>(`/knowledge/sources/${sourceId}`, {
       method: "DELETE",
-      headers: withAuth(token),
     });
   },
 
-  listJobs(token: string, sourceId: string): Promise<IndexJob[]> {
-    return request<IndexJob[]>(`/knowledge/jobs?source_id=${sourceId}`, {
-      headers: withAuth(token),
-    });
+  listJobs(sourceId: string): Promise<IndexJob[]> {
+    return request<IndexJob[]>(`/knowledge/jobs?source_id=${sourceId}`);
   },
 
-  search(token: string, workspaceId: string, query: string, limit = 10, projectId?: string): Promise<SearchResponse> {
+  search(workspaceId: string, query: string, limit = 10, projectId?: string): Promise<SearchResponse> {
     return request<SearchResponse>(`/knowledge/search?workspace_id=${workspaceId}`, {
       method: "POST",
-      headers: withAuth(token),
       body: JSON.stringify({ query, limit, project_id: projectId }),
     });
   },
 
   connectRepository(
-    token: string,
     workspaceId: string,
     provider: string,
     repository: string,
@@ -219,7 +241,6 @@ export const knowledgeApi = {
   ): Promise<KnowledgeSource> {
     return request<KnowledgeSource>("/knowledge/repositories/connect", {
       method: "POST",
-      headers: withAuth(token),
       body: JSON.stringify({
         workspace_id: workspaceId,
         provider,

@@ -40,8 +40,9 @@ export default function OrganizationMembersPage({ params }: { params: Promise<{ 
       await inviteMember(inviteEmail, inviteRole);
       setInviteEmail("");
       setInviteRole("MEMBER");
-    } catch (err: any) {
-      setInviteError(err.message || "Failed to invite user");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to invite user";
+      setInviteError(errorMessage);
     } finally {
       setIsInviting(false);
     }
@@ -50,8 +51,9 @@ export default function OrganizationMembersPage({ params }: { params: Promise<{ 
   async function handleUpdateRole(memberId: string, newRole: MemberRole) {
     try {
       await updateRole(memberId, newRole);
-    } catch (err: any) {
-      alert(err.message || "Failed to update role");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update role";
+      alert(errorMessage);
     }
   }
 
@@ -59,8 +61,9 @@ export default function OrganizationMembersPage({ params }: { params: Promise<{ 
     if (!confirm("Are you sure you want to remove this member?")) return;
     try {
       await removeMember(memberId);
-    } catch (err: any) {
-      alert(err.message || "Failed to remove member");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to remove member";
+      alert(errorMessage);
     }
   }
 
@@ -68,8 +71,9 @@ export default function OrganizationMembersPage({ params }: { params: Promise<{ 
     if (!confirm("Are you sure you want to transfer ownership to this user? You will become an ADMIN.")) return;
     try {
       await transferOwnership(targetUserId);
-    } catch (err: any) {
-      alert(err.message || "Failed to transfer ownership");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to transfer ownership";
+      alert(errorMessage);
     }
   }
 

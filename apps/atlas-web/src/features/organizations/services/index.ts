@@ -10,34 +10,34 @@ import {
 } from "../types";
 
 export const OrganizationService = {
-  async getOrganizations(token: string, type: "all" | "mine" = "all", skip = 0, limit = 50): Promise<OrganizationList> {
+  async getOrganizations(type: "all" | "mine" = "all", skip = 0, limit = 50): Promise<OrganizationList> {
     if (type === "mine") {
-      return orgApi.listMine(token, skip, limit);
+      return orgApi.listMine(skip, limit);
     }
-    return orgApi.list(token, skip, limit);
+    return orgApi.list(skip, limit);
   },
 
-  async getOrganization(token: string, id: string): Promise<OrganizationRead> {
-    return orgApi.get(token, id);
+  async getOrganization(id: string): Promise<OrganizationRead> {
+    return orgApi.get(id);
   },
 
-  async createOrganization(token: string, payload: OrganizationCreate): Promise<OrganizationRead> {
-    return orgApi.create(token, payload);
+  async createOrganization(payload: OrganizationCreate): Promise<OrganizationRead> {
+    return orgApi.create(payload);
   },
 
-  async updateOrganization(token: string, id: string, payload: OrganizationUpdate): Promise<OrganizationRead> {
-    return orgApi.update(token, id, payload);
+  async updateOrganization(id: string, payload: OrganizationUpdate): Promise<OrganizationRead> {
+    return orgApi.update(id, payload);
   },
 
-  async deleteOrganization(token: string, id: string): Promise<void> {
-    return orgApi.delete(token, id);
+  async deleteOrganization(id: string): Promise<void> {
+    return orgApi.delete(id);
   },
 
-  async getMembers(token: string, orgId: string, skip = 0, limit = 50): Promise<OrganizationMemberList> {
-    return orgMembersApi.list(token, orgId, skip, limit);
+  async getMembers(orgId: string, skip = 0, limit = 50): Promise<OrganizationMemberList> {
+    return orgMembersApi.list(orgId, skip, limit);
   },
 
-  async inviteMember(token: string, orgId: string, email: string, role: MemberRole = "MEMBER"): Promise<OrganizationMember> {
-    return orgMembersApi.invite(token, orgId, email, role);
+  async inviteMember(orgId: string, email: string, role: MemberRole = "MEMBER"): Promise<OrganizationMember> {
+    return orgMembersApi.invite(orgId, email, role);
   },
 };

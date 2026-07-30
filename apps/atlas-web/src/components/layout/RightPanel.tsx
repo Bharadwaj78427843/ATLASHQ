@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Sparkles, Plus, Clock, FileText, Database, Shield, Zap, Box, PlayCircle } from "lucide-react"
+import { Plus, Clock, FileText, Database, Shield, Zap, PlayCircle } from "lucide-react"
 
 export function RightPanel() {
   return (

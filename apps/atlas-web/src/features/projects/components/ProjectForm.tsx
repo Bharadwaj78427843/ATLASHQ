@@ -22,8 +22,9 @@ export function ProjectForm({ orgId, workspaceId }: { orgId: string, workspaceId
     try {
       await createProject(form);
       router.push(`/organizations/${orgId}/workspaces/${workspaceId}`);
-    } catch (err: any) {
-      setError(err.message || "Failed to create project");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create project";
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };

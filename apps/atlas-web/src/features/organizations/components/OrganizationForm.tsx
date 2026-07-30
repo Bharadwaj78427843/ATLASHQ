@@ -58,7 +58,7 @@ export function OrganizationForm() {
         website: form.website || undefined,
       });
       router.push(`/organizations/${org.id}`);
-    } catch (err) {
+    } catch {
       // Error is handled by hook
     }
   }

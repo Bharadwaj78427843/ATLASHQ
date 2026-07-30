@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { EnvironmentService } from "../services";
 import { EnvironmentList, EnvironmentRead, EnvironmentCreate, EnvironmentUpdate } from "../types";
-import { getAccessToken } from "@/lib/auth";
 
 export function useEnvironments(workspaceId: string, projectId: string) {
   const [data, setData] = useState<EnvironmentList | null>(null);
@@ -11,36 +10,33 @@ export function useEnvironments(workspaceId: string, projectId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchEnvironments = useCallback(async (skip = 0, limit = 50) => {
-    const token = getAccessToken();
-    if (!token || !workspaceId || !projectId) return;
+    if (!workspaceId || !projectId) return;
     try {
       setLoading(true);
       setError(null);
-      const result = await EnvironmentService.getEnvironments(token, workspaceId, projectId, skip, limit);
+      const result = await EnvironmentService.getEnvironments(workspaceId, projectId, skip, limit);
       setData(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch environments");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch environments";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   }, [workspaceId, projectId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchEnvironments();
   }, [fetchEnvironments]);
 
   const createEnvironment = async (payload: EnvironmentCreate) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    const result = await EnvironmentService.createEnvironment(token, workspaceId, projectId, payload);
+    const result = await EnvironmentService.createEnvironment(workspaceId, projectId, payload);
     await fetchEnvironments();
     return result;
   };
 
   const deleteEnvironment = async (environmentId: string) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    await EnvironmentService.deleteEnvironment(token, workspaceId, projectId, environmentId);
+    await EnvironmentService.deleteEnvironment(workspaceId, projectId, environmentId);
     await fetchEnvironments();
   };
 
@@ -60,15 +56,15 @@ export function useEnvironment(workspaceId: string, projectId: string, environme
   const [error, setError] = useState<string | null>(null);
 
   const fetchEnvironment = useCallback(async () => {
-    const token = getAccessToken();
-    if (!token || !workspaceId || !projectId || !environmentId) return;
+    if (!workspaceId || !projectId || !environmentId) return;
     try {
       setLoading(true);
       setError(null);
-      const result = await EnvironmentService.getEnvironment(token, workspaceId, projectId, environmentId);
+      const result = await EnvironmentService.getEnvironment(workspaceId, projectId, environmentId);
       setData(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch environment");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch environment";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,14 +72,13 @@ export function useEnvironment(workspaceId: string, projectId: string, environme
 
   useEffect(() => {
     if (workspaceId && projectId && environmentId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchEnvironment();
     }
   }, [fetchEnvironment, workspaceId, projectId, environmentId]);
 
   const updateEnvironment = async (payload: EnvironmentUpdate) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    const result = await EnvironmentService.updateEnvironment(token, workspaceId, projectId, environmentId, payload);
+    const result = await EnvironmentService.updateEnvironment(workspaceId, projectId, environmentId, payload);
     setData(result);
     return result;
   };

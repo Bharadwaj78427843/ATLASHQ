@@ -22,8 +22,9 @@ export function WorkspaceForm({ orgId }: { orgId: string }) {
     try {
       await createWorkspace(form);
       router.push(`/organizations/${orgId}`);
-    } catch (err: any) {
-      setError(err.message || "Failed to create workspace");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create workspace";
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };

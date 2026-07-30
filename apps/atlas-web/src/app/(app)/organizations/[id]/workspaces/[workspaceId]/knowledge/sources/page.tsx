@@ -5,35 +5,33 @@ import { File, Trash2, RefreshCw } from "lucide-react"
 import { GlassPanel } from "@/components/ui/GlassPanel"
 import { Button } from "@/components/ui/Button"
 import { knowledgeApi, KnowledgeSource } from "@/lib/api"
-import { getAccessToken } from "@/lib/auth"
 
 export default function KnowledgeSourcesPage({ params }: { params: Promise<{ id: string; workspaceId: string }> }) {
   const resolvedParams = use(params)
   const [sources, setSources] = useState<KnowledgeSource[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchSources = async () => {
-    const token = getAccessToken()
-    if (!token) return
+  const fetchSources = React.useCallback(async () => {
     try {
-      const data = await knowledgeApi.listSources(token, resolvedParams.workspaceId)
+      setIsLoading(true)
+      const data = await knowledgeApi.listSources(resolvedParams.workspaceId)
       setSources(data)
     } catch (err) {
       console.error(err)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchSources()
   }, [resolvedParams.workspaceId])
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchSources()
+  }, [fetchSources])
+
   const handleDelete = async (sourceId: string) => {
-    const token = getAccessToken()
-    if (!token || !confirm("Delete this source?")) return
+    if (!confirm("Delete this source?")) return
     try {
-      await knowledgeApi.deleteSource(token, sourceId)
+      await knowledgeApi.deleteSource(sourceId)
       setSources(s => s.filter(x => x.id !== sourceId))
     } catch (err) {
       console.error(err)

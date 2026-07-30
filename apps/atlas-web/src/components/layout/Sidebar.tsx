@@ -9,13 +9,12 @@ import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces"
 import {
   Home, Folder, GitBranch, Box, Rocket,
   Bot, BookOpen, Search,
-  Users, Settings as SettingsIcon,
-  ChevronDown
+  Users, Settings as SettingsIcon
 } from "lucide-react"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { activeOrganization, setActiveOrganizationId } = useActiveOrganization()
+  const { activeOrganization } = useActiveOrganization()
   const orgId = activeOrganization?.id || ""
   const { data: workspacesData } = useWorkspaces(orgId)
 

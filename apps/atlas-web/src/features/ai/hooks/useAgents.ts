@@ -1,21 +1,27 @@
 import { useState } from "react";
 import { request } from "@/lib/api";
-import { getAccessToken } from "@/lib/auth";
+
+export interface ExecutionResponse {
+  execution_id: string;
+  prompt?: string;
+}
+
+export interface ExecutionStatus {
+  status: "pending" | "running" | "completed" | "failed";
+  result?: string;
+  error?: string;
+}
 
 export function useAgents(workspaceId: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const executeAgent = async (prompt: string, organizationId?: string) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    
     setLoading(true);
     setError(null);
     try {
-      const response = await request<any>('/ai/agents/execute', {
+      const response = await request<ExecutionResponse>('/ai/agents/execute', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           prompt,
           workspace_id: workspaceId,
@@ -23,8 +29,9 @@ export function useAgents(workspaceId: string) {
         })
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || "Failed to execute agent");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to execute agent";
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -32,15 +39,10 @@ export function useAgents(workspaceId: string) {
   };
 
   const getStatus = async (executionId: string) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    
     try {
-      const response = await request<any>(`/ai/agents/status/${executionId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await request<ExecutionStatus>(`/ai/agents/status/${executionId}`);
       return response;
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err;
     }
   };

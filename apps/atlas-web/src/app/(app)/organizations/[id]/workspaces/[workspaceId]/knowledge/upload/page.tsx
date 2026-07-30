@@ -6,7 +6,6 @@ import { UploadCloud, File, CheckCircle2, AlertCircle } from "lucide-react"
 import { GlassPanel } from "@/components/ui/GlassPanel"
 import { Button } from "@/components/ui/Button"
 import { knowledgeApi } from "@/lib/api"
-import { getAccessToken } from "@/lib/auth"
 
 export default function KnowledgeUploadPage({ params }: { params: Promise<{ id: string; workspaceId: string }> }) {
   const resolvedParams = use(params)
@@ -27,20 +26,20 @@ export default function KnowledgeUploadPage({ params }: { params: Promise<{ id: 
   }
 
   const handleUpload = async () => {
-    const token = getAccessToken()
-    if (!selectedFile || !token) return
+    if (!selectedFile) return
     setIsUploading(true)
     setError(null)
 
     try {
-      await knowledgeApi.upload(token, resolvedParams.workspaceId, selectedFile)
+      await knowledgeApi.upload(resolvedParams.workspaceId, selectedFile)
       setSuccess(true)
       setSelectedFile(null)
       setTimeout(() => {
         router.push(`/organizations/${resolvedParams.id}/workspaces/${resolvedParams.workspaceId}/knowledge/sources`)
       }, 1500)
-    } catch (err: any) {
-      setError(err.detail || "Failed to upload file")
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to upload file"
+      setError(errorMessage)
     } finally {
       setIsUploading(false)
     }

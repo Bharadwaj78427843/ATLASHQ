@@ -43,7 +43,7 @@ export function SourceList({ sources, onDelete }: SourceListProps) {
     {
       header: "Status",
       accessor: (source: KnowledgeSource) => (
-        <StatusBadge status={source.status as any} label={source.status.replace("_", " ")} />
+        <StatusBadge status={source.status as React.ComponentProps<typeof StatusBadge>["status"]} label={source.status.replace("_", " ")} />
       ),
     },
     {

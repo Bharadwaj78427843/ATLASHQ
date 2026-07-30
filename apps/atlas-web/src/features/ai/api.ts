@@ -1,5 +1,4 @@
 import { request } from "@/lib/api";
-import { getAccessToken } from "@/lib/auth";
 
 export interface AIProvider {
   category: string;
@@ -17,29 +16,18 @@ export interface ChatResponse {
 }
 
 export const aiApi = {
-  getHealth: async (): Promise<any> => {
-    const token = getAccessToken();
-    const res = await request<any>('/ai/health', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return res;
+  getHealth: async (): Promise<Record<string, unknown>> => {
+    return request<Record<string, unknown>>('/ai/health');
   },
 
   getProviders: async (): Promise<{ providers: AIProvider[] }> => {
-    const token = getAccessToken();
-    const res = await request<{ providers: AIProvider[] }>('/ai/providers', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return res;
+    return request<{ providers: AIProvider[] }>('/ai/providers');
   },
 
   chat: async (prompt: string, workspaceId?: string): Promise<ChatResponse> => {
-    const token = getAccessToken();
-    const res = await request<ChatResponse>('/ai/chat', {
+    return request<ChatResponse>('/ai/chat', {
       method: "POST",
       body: JSON.stringify({ prompt, workspace_id: workspaceId }),
-      headers: { Authorization: `Bearer ${token}` }
     });
-    return res;
   },
 };

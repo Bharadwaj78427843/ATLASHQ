@@ -22,6 +22,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     if (!activeOrgId && data?.items && data.items.length > 0) {
       const saved = localStorage.getItem("atlas_active_org");
       if (saved && data.items.find((org) => org.id === saved)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setActiveOrgId(saved);
       } else {
         setActiveOrgId(data.items[0].id);

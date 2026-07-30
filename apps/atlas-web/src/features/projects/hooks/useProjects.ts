@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { ProjectService } from "../services";
 import { ProjectList, ProjectRead, ProjectCreate, ProjectUpdate } from "../types";
-import { getAccessToken } from "@/lib/auth";
 
 export function useProjects(workspaceId: string) {
   const [data, setData] = useState<ProjectList | null>(null);
@@ -11,36 +10,33 @@ export function useProjects(workspaceId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = useCallback(async (skip = 0, limit = 50) => {
-    const token = getAccessToken();
-    if (!token || !workspaceId) return;
+    if (!workspaceId) return;
     try {
       setLoading(true);
       setError(null);
-      const result = await ProjectService.getProjects(token, workspaceId, skip, limit);
+      const result = await ProjectService.getProjects(workspaceId, skip, limit);
       setData(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch projects");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch projects";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   }, [workspaceId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProjects();
   }, [fetchProjects]);
 
   const createProject = async (payload: ProjectCreate) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    const result = await ProjectService.createProject(token, workspaceId, payload);
+    const result = await ProjectService.createProject(workspaceId, payload);
     await fetchProjects();
     return result;
   };
 
   const deleteProject = async (projectId: string) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    await ProjectService.deleteProject(token, workspaceId, projectId);
+    await ProjectService.deleteProject(workspaceId, projectId);
     await fetchProjects();
   };
 
@@ -60,15 +56,15 @@ export function useProject(workspaceId: string, projectId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProject = useCallback(async () => {
-    const token = getAccessToken();
-    if (!token || !workspaceId || !projectId) return;
+    if (!workspaceId || !projectId) return;
     try {
       setLoading(true);
       setError(null);
-      const result = await ProjectService.getProject(token, workspaceId, projectId);
+      const result = await ProjectService.getProject(workspaceId, projectId);
       setData(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch project");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch project";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,14 +72,13 @@ export function useProject(workspaceId: string, projectId: string) {
 
   useEffect(() => {
     if (workspaceId && projectId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchProject();
     }
   }, [fetchProject, workspaceId, projectId]);
 
   const updateProject = async (payload: ProjectUpdate) => {
-    const token = getAccessToken();
-    if (!token) throw new Error("Not authenticated");
-    const result = await ProjectService.updateProject(token, workspaceId, projectId, payload);
+    const result = await ProjectService.updateProject(workspaceId, projectId, payload);
     setData(result);
     return result;
   };

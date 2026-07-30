@@ -2,14 +2,14 @@
 
 import React, { useState, use } from "react"
 import { useRouter } from "next/navigation"
-import { GitBranch, CheckCircle2, AlertCircle } from "lucide-react"
+import { GitBranch } from "lucide-react"
 import { GlassPanel } from "@/components/ui/GlassPanel"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Alert } from "@/components/ui/Alert"
 import { FormField } from "@/components/ui/FormField"
 import { knowledgeApi } from "@/lib/api"
-import { getAccessToken } from "@/lib/auth"
+
 
 export default function ConnectRepositoryPage({ params }: { params: Promise<{ id: string; workspaceId: string }> }) {
   const resolvedParams = use(params)
@@ -25,15 +25,13 @@ export default function ConnectRepositoryPage({ params }: { params: Promise<{ id
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault()
-    const token = getAccessToken()
-    if (!token || !repository.trim() || !branch.trim()) return
+    if (!repository.trim() || !branch.trim()) return
 
     setIsConnecting(true)
     setError(null)
 
     try {
       await knowledgeApi.connectRepository(
-        token,
         resolvedParams.workspaceId,
         provider,
         repository,
@@ -43,8 +41,9 @@ export default function ConnectRepositoryPage({ params }: { params: Promise<{ id
       setTimeout(() => {
         router.push(`/organizations/${resolvedParams.id}/workspaces/${resolvedParams.workspaceId}/knowledge/jobs`)
       }, 1500)
-    } catch (err: any) {
-      setError(err.detail || "Failed to connect repository")
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to connect repository"
+      setError(errorMessage)
     } finally {
       setIsConnecting(false)
     }

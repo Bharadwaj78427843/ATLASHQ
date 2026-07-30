@@ -1,4 +1,3 @@
-import { UUID } from "crypto";
 
 export interface KnowledgeSource {
   id: string;

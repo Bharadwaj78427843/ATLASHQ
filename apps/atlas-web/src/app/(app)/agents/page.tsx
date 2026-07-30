@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useActiveOrganization } from "@/contexts/OrganizationContext";
 import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces";
-import { useAgents } from "@/features/ai/hooks/useAgents";
+import { useAgents, ExecutionResponse, ExecutionStatus } from "@/features/ai/hooks/useAgents";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -18,16 +18,12 @@ export default function AgentsPage() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
 
   const [prompt, setPrompt] = useState("");
-  const [execution, setExecution] = useState<any>(null);
-  const [executionStatus, setExecutionStatus] = useState<any>(null);
+  const [execution, setExecution] = useState<ExecutionResponse | null>(null);
+  const [executionStatus, setExecutionStatus] = useState<ExecutionStatus | null>(null);
 
-  useEffect(() => {
-    if (!activeWorkspaceId && workspacesData?.items && workspacesData.items.length > 0) {
-      setActiveWorkspaceId(workspacesData.items[0].id);
-    }
-  }, [workspacesData, activeWorkspaceId]);
+  const currentWorkspaceId = activeWorkspaceId || (workspacesData?.items && workspacesData.items.length > 0 ? workspacesData.items[0].id : null);
 
-  const { executeAgent, getStatus, loading, error, clearError } = useAgents(activeWorkspaceId || "");
+  const { executeAgent, getStatus, loading, error, clearError } = useAgents(currentWorkspaceId || "");
 
   // Poll status if execution is active
   useEffect(() => {
@@ -56,7 +52,7 @@ export default function AgentsPage() {
       setExecution(res);
       setExecutionStatus({ status: "pending" });
       setPrompt("");
-    } catch (err) {
+    } catch {
       // Error handled by hook
     }
   };
@@ -130,7 +126,7 @@ export default function AgentsPage() {
           <Button 
             type="submit" 
             variant="primary" 
-            disabled={!prompt.trim() || loading || (executionStatus && ["pending", "running"].includes(executionStatus.status))}
+            disabled={!!(!prompt.trim() || loading || (executionStatus && ["pending", "running"].includes(executionStatus.status)))}
           >
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
             Execute Agent

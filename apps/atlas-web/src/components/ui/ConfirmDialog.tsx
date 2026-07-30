@@ -2,7 +2,6 @@ import React from "react"
 import { AlertTriangle, X } from "lucide-react"
 import { GlassPanel } from "./GlassPanel"
 import { Button } from "./Button"
-import { cn } from "@/lib/utils"
 
 interface ConfirmDialogProps {
   isOpen: boolean
