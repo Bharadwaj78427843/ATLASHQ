@@ -1,3 +1,4 @@
+from sqlalchemy import select
 import asyncio
 import os
 import shutil
@@ -52,7 +53,7 @@ class IndexingService:
         self.storage_service = storage_service
 
     async def index_source(self, source_id: UUID):
-        source = self.repository.get_source(source_id)
+        source = await self.repository.get_source(source_id)
         if not source:
             return
 
@@ -62,10 +63,10 @@ class IndexingService:
             await self._index_document(source)
 
     async def _index_document(self, source: KnowledgeSource):
-        job = self.repository.create_index_job(
+        job = await self.repository.create_index_job(
             IndexJob(source_id=source.id, status="running", started_at=datetime.now(timezone.utc))
         )
-        self.repository.update_source_status(source.id, "indexing")
+        await self.repository.update_source_status(source.id, "indexing")
 
         try:
             document_name = source.name
@@ -78,16 +79,16 @@ class IndexingService:
             )
             await self.orchestrator.ingest(document_ref, collection=str(source.workspace_id))
 
-            self.repository.update_index_job(job.id, "completed", progress=1.0)
-            self.repository.update_source_status(source.id, "ready")
+            await self.repository.update_index_job(job.id, "completed", progress=1.0)
+            await self.repository.update_source_status(source.id, "ready")
         except Exception as exc:  # noqa: BLE001
-            self._handle_index_error(source.id, job.id, exc)
+            await self._handle_index_error(source.id, job.id, exc)
 
     async def _index_repository(self, source: KnowledgeSource):
-        job = self.repository.create_index_job(
+        job = await self.repository.create_index_job(
             IndexJob(source_id=source.id, status="cloning", started_at=datetime.now(timezone.utc))
         )
-        self.repository.update_source_status(source.id, "cloning")
+        await self.repository.update_source_status(source.id, "cloning")
         
         try:
             metadata = source.metadata_json or {}
@@ -96,7 +97,8 @@ class IndexingService:
             url = f"https://github.com/{repo_name}"
 
             # Get org id from workspace
-            workspace = self.repository.db.query(Workspace).filter(Workspace.id == source.workspace_id).first()
+            workspace_result = await self.repository.db.execute(select(Workspace).where(Workspace.id == source.workspace_id))
+            workspace = workspace_result.scalar_one_or_none()
             org_id = workspace.organization_id if workspace else "unknown_org"
 
             target_path = self.storage_service.get_repository_path(org_id, source.workspace_id, repo_name)
@@ -104,8 +106,8 @@ class IndexingService:
             # Clone or Pull
             clone_result = await self.git_service.clone_or_pull(url, target_path)
 
-            self.repository.update_source_status(source.id, "indexing")
-            self.repository.update_index_job(job.id, "indexing", progress=0.5)
+            await self.repository.update_source_status(source.id, "indexing")
+            await self.repository.update_index_job(job.id, "indexing", progress=0.5)
 
             # Analyze the repository
             repo_metadata = self.indexer.analyze(target_path, provider, url, clone_result.default_branch)
@@ -113,20 +115,21 @@ class IndexingService:
             # Store metadata
             source.metadata_json = repo_metadata.model_dump(mode="json")
 
-            self.repository.update_index_job(job.id, "completed", progress=1.0)
-            self.repository.update_source_status(source.id, "ready")
-            self.repository.db.commit()
+            await self.repository.update_index_job(job.id, "completed", progress=1.0)
+            await self.repository.update_source_status(source.id, "ready")
+            await self.repository.db.commit()
 
         except Exception as exc:
-            self._handle_index_error(source.id, job.id, exc)
+            await self._handle_index_error(source.id, job.id, exc)
 
-    def _handle_index_error(self, source_id: UUID, job_id: UUID, exc: Exception):
-        self.repository.update_index_job(job_id, "failed", progress=0.0)
-        self.repository.update_source_status(source_id, "failed")
-        failed = self.repository.db.query(IndexJob).filter(IndexJob.id == job_id).first()
+    async def _handle_index_error(self, source_id: UUID, job_id: UUID, exc: Exception):
+        await self.repository.update_index_job(job_id, "failed", progress=0.0)
+        await self.repository.update_source_status(source_id, "failed")
+        failed_result = await self.repository.db.execute(select(IndexJob).where(IndexJob.id == job_id))
+        failed = failed_result.scalar_one_or_none()
         if failed:
             failed.error_message = str(exc)
-            self.repository.db.commit()
+            await self.repository.db.commit()
 
 
 class UploadService:
@@ -145,12 +148,12 @@ class UploadService:
             uploaded_by=user_id,
             size_bytes=file.size
         )
-        source = self.repository.create_source(source)
+        source = await self.repository.create_source(source)
 
         # Save to storage
         storage_path = self.storage_service.save_file(file, source.id)
         source.storage_path = storage_path
-        self.repository.db.commit()
+        await self.repository.db.commit()
 
         # Create Document record
         doc = KnowledgeDocument(
@@ -158,7 +161,7 @@ class UploadService:
             filename=file.filename,
             mime_type=file.content_type or "application/octet-stream"
         )
-        self.repository.create_document(doc)
+        await self.repository.create_document(doc)
 
         # Kick off background indexing through the configured knowledge provider
         asyncio.create_task(self.indexing_service.index_source(source.id))
@@ -253,7 +256,7 @@ class RepositoryService:
                 "branch": branch
             }
         )
-        source = self.repository.create_source(source)
+        source = await self.repository.create_source(source)
 
         # Trigger indexing workflow
         asyncio.create_task(self.indexing_service.index_source(source.id))
@@ -261,7 +264,7 @@ class RepositoryService:
         return source
 
     async def sync_repository(self, source_id: UUID) -> KnowledgeSource:
-        source = self.repository.get_source(source_id)
+        source = await self.repository.get_source(source_id)
         if not source:
             raise ValueError("Knowledge source not found")
             
@@ -272,7 +275,7 @@ class RepositoryService:
             raise ValueError("Repository sync is already in progress")
 
         # Set status to validating to kick off the flow
-        self.repository.update_source_status(source.id, "validating")
+        await self.repository.update_source_status(source.id, "validating")
 
         # Trigger indexing workflow
         asyncio.create_task(self.indexing_service.index_source(source.id))

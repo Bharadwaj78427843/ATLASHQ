@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from uuid import UUID
 
@@ -17,7 +17,7 @@ from app.schemas.knowledge import KnowledgeSourceResponse, IndexJobResponse, Sea
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
 def get_services(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     orchestrator: KnowledgeOrchestrator = Depends(get_knowledge_orchestrator),
 ):
     repo = KnowledgeRepository(db)
@@ -92,44 +92,44 @@ async def sync_repository(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/sources", response_model=List[KnowledgeSourceResponse])
-def get_sources(
+async def get_sources(
     workspace_id: UUID,
     current_user: User = Depends(get_current_user),
     services: tuple = Depends(get_services)
 ):
     repo, _, _, _ = services
-    return repo.get_sources_by_workspace(workspace_id)
+    return await repo.get_sources_by_workspace(workspace_id)
 
 @router.get("/sources/{source_id}", response_model=KnowledgeSourceResponse)
-def get_source(
+async def get_source(
     source_id: UUID,
     current_user: User = Depends(get_current_user),
     services: tuple = Depends(get_services)
 ):
     repo, _, _, _ = services
-    source = repo.get_source(source_id)
+    source = await repo.get_source(source_id)
     if not source:
         raise HTTPException(status_code=404, detail="Source not found")
     return source
 
 @router.delete("/sources/{source_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_source(
+async def delete_source(
     source_id: UUID,
     current_user: User = Depends(get_current_user),
     services: tuple = Depends(get_services)
 ):
     repo, _, _, _ = services
-    if not repo.delete_source(source_id):
+    if not await repo.delete_source(source_id):
         raise HTTPException(status_code=404, detail="Source not found")
 
 @router.get("/jobs", response_model=List[IndexJobResponse])
-def get_jobs(
+async def get_jobs(
     source_id: UUID,
     current_user: User = Depends(get_current_user),
     services: tuple = Depends(get_services)
 ):
     repo, _, _, _ = services
-    return repo.get_index_jobs_by_source(source_id)
+    return await repo.get_index_jobs_by_source(source_id)
 
 @router.post("/search", response_model=SearchResponse)
 async def search_knowledge(

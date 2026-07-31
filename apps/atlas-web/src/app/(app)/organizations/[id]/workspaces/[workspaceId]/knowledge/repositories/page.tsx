@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useState, use } from "react"
-import { GitBranch, RefreshCw } from "lucide-react"
+import { GitBranch, RefreshCw, Trash2 } from "lucide-react"
 import { GlassPanel } from "@/components/ui/GlassPanel"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 import { StatusBadge, type StatusType } from "@/components/ui/StatusBadge"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { ApiError, knowledgeApi, type KnowledgeSource } from "@/lib/api"
 
 type RepositoryMetadata = {
@@ -138,11 +139,15 @@ function mapUserFriendlyError(err: unknown): string {
 function RepositoryCard({
   source,
   syncing,
+  deleting,
   onSync,
+  onDelete,
 }: {
   source: KnowledgeSource
   syncing: boolean
+  deleting: boolean
   onSync: (sourceId: string) => Promise<void>
+  onDelete: (sourceId: string) => Promise<void>
 }) {
   const statusKey = source.status.toLowerCase()
   const status = STATUS_STYLE[statusKey] ?? { label: source.status.toUpperCase(), status: "neutral" as const }
@@ -157,7 +162,7 @@ function RepositoryCard({
   const folderCount = formatCount(metadata.directory_summary?.folder_count)
   const repositorySize = formatBytes(metadata.statistics?.total_size_bytes ?? source.size_bytes ?? undefined)
 
-  const syncDisabled = syncing || TRANSIENT_STATUSES.has(statusKey)
+  const syncDisabled = syncing || deleting || TRANSIENT_STATUSES.has(statusKey)
 
   return (
     <GlassPanel className="p-5 space-y-4">
@@ -211,7 +216,17 @@ function RepositoryCard({
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="danger"
+          size="sm"
+          className="gap-2"
+          disabled={syncDisabled}
+          onClick={() => void onDelete(source.id)}
+        >
+          {deleting ? <span className="spinner-ring" aria-label="Deleting repository" /> : <Trash2 className="w-3.5 h-3.5" />}
+          Delete
+        </Button>
         <Button
           variant="secondary"
           size="sm"
@@ -261,6 +276,8 @@ export default function ConnectRepositoryPage({ params }: { params: Promise<{ id
 
   const [isConnecting, setIsConnecting] = useState(false)
   const [syncingRepositoryIds, setSyncingRepositoryIds] = useState<Record<string, boolean>>({})
+  const [deletingRepositoryIds, setDeletingRepositoryIds] = useState<Record<string, boolean>>({})
+  const [pendingDeleteSourceId, setPendingDeleteSourceId] = useState<string | null>(null)
 
   const [error, setError] = useState<string | null>(null)
   const [pageError, setPageError] = useState<string | null>(null)
@@ -365,6 +382,31 @@ export default function ConnectRepositoryPage({ params }: { params: Promise<{ id
     }
   }
 
+  const handleDelete = async (sourceId: string) => {
+    setError(null)
+    setSuccessMessage(null)
+    setDeletingRepositoryIds((prev) => ({ ...prev, [sourceId]: true }))
+
+    try {
+      await knowledgeApi.deleteSource(sourceId)
+      setRepositories((prev) => prev.filter((repo) => repo.id !== sourceId))
+      setSuccessMessage("Repository removed successfully.")
+    } catch (err: unknown) {
+      setError(mapUserFriendlyError(err))
+    } finally {
+      setDeletingRepositoryIds((prev) => {
+        const next = { ...prev }
+        delete next[sourceId]
+        return next
+      })
+      setPendingDeleteSourceId(null)
+    }
+  }
+
+  const pendingDeleteRepository = pendingDeleteSourceId
+    ? repositories.find((repository) => repository.id === pendingDeleteSourceId) ?? null
+    : null
+
   return (
     <div className="space-y-6">
       <GlassPanel className="p-8">
@@ -451,12 +493,36 @@ export default function ConnectRepositoryPage({ params }: { params: Promise<{ id
                 key={source.id}
                 source={source}
                 syncing={Boolean(syncingRepositoryIds[source.id])}
+                deleting={Boolean(deletingRepositoryIds[source.id])}
                 onSync={handleSync}
+                onDelete={async (sourceId) => {
+                  setPendingDeleteSourceId(sourceId)
+                }}
               />
             ))}
           </div>
         ) : null}
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingDeleteRepository)}
+        title="Delete Repository"
+        description={
+          pendingDeleteRepository
+            ? `Delete repository source \"${pendingDeleteRepository.name}\" from this workspace?`
+            : "Delete repository source from this workspace?"
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        isLoading={Boolean(pendingDeleteSourceId && deletingRepositoryIds[pendingDeleteSourceId])}
+        onCancel={() => setPendingDeleteSourceId(null)}
+        onConfirm={() => {
+          if (pendingDeleteSourceId) {
+            void handleDelete(pendingDeleteSourceId)
+          }
+        }}
+      />
     </div>
   )
 }

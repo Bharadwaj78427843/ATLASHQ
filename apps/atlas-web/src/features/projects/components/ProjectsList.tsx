@@ -11,14 +11,15 @@ import { Button } from "@/components/ui/Button";
 export function ProjectsList({ orgId, workspaceId }: { orgId: string, workspaceId: string }) {
   const { user } = useAuth();
   const { data: projects, loading, error, fetchProjects } = useProjects(workspaceId);
-  const { data: members } = useOrganizationMembers(orgId);
+  const { data: members, fetchMembers } = useOrganizationMembers(orgId);
 
   useEffect(() => {
     fetchProjects();
-  }, [fetchProjects]);
+    fetchMembers();
+  }, [fetchProjects, fetchMembers]);
 
   const currentMember = members?.items.find(m => m.user_id === user?.id);
-  const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN" || currentMember?.role === "MEMBER";
+  const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
 
   if (loading && !projects) {
     return <div className="py-12 text-center"><span className="spinner-ring" /></div>;
@@ -40,8 +41,16 @@ export function ProjectsList({ orgId, workspaceId }: { orgId: string, workspaceI
       </div>
       
       {projects?.items.length === 0 ? (
-        <div className="text-center py-12 text-[var(--color-text-secondary)] bg-[rgba(255,255,255,0.02)] rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)]">
-          No projects found in this workspace.
+        <div className="text-center py-12 text-[var(--color-text-secondary)] bg-[rgba(255,255,255,0.02)] rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] flex flex-col items-center gap-4">
+          <div>
+            <p className="text-lg font-medium text-[var(--color-text-primary)]">No projects found.</p>
+            <p>Create your first project.</p>
+          </div>
+          {canManage && (
+            <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/projects/new`}>
+              <Button variant="primary">New Project</Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

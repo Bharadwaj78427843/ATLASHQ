@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/Button";
 export function WorkspacesList({ orgId }: { orgId: string }) {
   const { user } = useAuth();
   const { data: workspaces, loading, error, fetchWorkspaces } = useWorkspaces(orgId);
-  const { data: members } = useOrganizationMembers(orgId);
+  const { data: members, fetchMembers } = useOrganizationMembers(orgId);
 
   useEffect(() => {
     fetchWorkspaces();
-  }, [fetchWorkspaces]);
+    fetchMembers();
+  }, [fetchWorkspaces, fetchMembers]);
 
   const currentMember = members?.items.find(m => m.user_id === user?.id);
   const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
@@ -40,8 +41,16 @@ export function WorkspacesList({ orgId }: { orgId: string }) {
       </div>
       
       {workspaces?.items.length === 0 ? (
-        <div className="text-center py-12 text-[var(--color-text-secondary)] bg-[rgba(255,255,255,0.02)] rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)]">
-          No workspaces found in this organization.
+        <div className="text-center py-12 text-[var(--color-text-secondary)] bg-[rgba(255,255,255,0.02)] rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] flex flex-col items-center gap-4">
+          <div>
+            <p className="text-lg font-medium text-[var(--color-text-primary)]">No workspaces found.</p>
+            <p>Create your first workspace.</p>
+          </div>
+          {canManage && (
+            <Link href={`/organizations/${orgId}/workspaces/new`}>
+              <Button variant="primary">New Workspace</Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

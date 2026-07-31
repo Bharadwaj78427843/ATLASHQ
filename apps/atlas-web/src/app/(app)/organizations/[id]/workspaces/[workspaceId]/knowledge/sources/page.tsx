@@ -1,23 +1,35 @@
 "use client"
 
 import React, { useEffect, useState, use } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { File, Trash2, RefreshCw } from "lucide-react"
 import { GlassPanel } from "@/components/ui/GlassPanel"
 import { Button } from "@/components/ui/Button"
 import { knowledgeApi, KnowledgeSource } from "@/lib/api"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { ErrorState } from "@/components/ui/ErrorState"
+import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 
 export default function KnowledgeSourcesPage({ params }: { params: Promise<{ id: string; workspaceId: string }> }) {
   const resolvedParams = use(params)
+  const router = useRouter()
   const [sources, setSources] = useState<KnowledgeSource[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [sourceToDelete, setSourceToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchSources = React.useCallback(async () => {
     try {
       setIsLoading(true)
+      setError(null)
       const data = await knowledgeApi.listSources(resolvedParams.workspaceId)
       setSources(data)
-    } catch (err) {
-      console.error(err)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to load knowledge sources"
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -28,13 +40,18 @@ export default function KnowledgeSourcesPage({ params }: { params: Promise<{ id:
     void fetchSources()
   }, [fetchSources])
 
-  const handleDelete = async (sourceId: string) => {
-    if (!confirm("Delete this source?")) return
+  const handleDelete = async () => {
+    if (!sourceToDelete) return
+    setIsDeleting(true)
     try {
-      await knowledgeApi.deleteSource(sourceId)
-      setSources(s => s.filter(x => x.id !== sourceId))
-    } catch (err) {
-      console.error(err)
+      await knowledgeApi.deleteSource(sourceToDelete)
+      setSources(s => s.filter(x => x.id !== sourceToDelete))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete source"
+      setError(message)
+    } finally {
+      setIsDeleting(false)
+      setSourceToDelete(null)
     }
   }
 
@@ -56,11 +73,19 @@ export default function KnowledgeSourcesPage({ params }: { params: Promise<{ id:
         </Button>
       </div>
 
+      {error ? <ErrorState title="Unable to load sources" error={error} onRetry={() => void fetchSources()} /> : null}
+
       <GlassPanel>
         {isLoading ? (
-          <div className="p-8 text-center text-[var(--color-text-muted)]">Loading sources...</div>
+          <div className="p-6"><SkeletonLoader lines={5} /></div>
         ) : sources.length === 0 ? (
-          <div className="p-8 text-center text-[var(--color-text-muted)]">No sources uploaded yet.</div>
+          <EmptyState
+            icon={File}
+            title="No knowledge sources yet"
+            description="Upload your first document or connect a repository to start indexing workspace knowledge."
+            actionLabel="Upload Document"
+            onAction={() => router.push(`/organizations/${resolvedParams.id}/workspaces/${resolvedParams.workspaceId}/knowledge/upload`)}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -94,7 +119,7 @@ export default function KnowledgeSourcesPage({ params }: { params: Promise<{ id:
                       {new Date(source.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(source.id)} className="text-[var(--color-accent-red)] hover:text-red-400">
+                      <Button variant="ghost" size="icon" onClick={() => setSourceToDelete(source.id)} className="text-[var(--color-accent-red)] hover:text-red-400">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </td>
@@ -105,6 +130,26 @@ export default function KnowledgeSourcesPage({ params }: { params: Promise<{ id:
           </div>
         )}
       </GlassPanel>
+
+      {!isLoading && sources.length === 0 ? (
+        <div className="flex justify-center">
+          <Link href={`/organizations/${resolvedParams.id}/workspaces/${resolvedParams.workspaceId}/knowledge/repositories`}>
+            <Button variant="secondary">Connect Repository Instead</Button>
+          </Link>
+        </div>
+      ) : null}
+
+      <ConfirmDialog
+        isOpen={!!sourceToDelete}
+        title="Delete Knowledge Source"
+        description="Are you sure you want to delete this knowledge source? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        isLoading={isDeleting}
+        onCancel={() => setSourceToDelete(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

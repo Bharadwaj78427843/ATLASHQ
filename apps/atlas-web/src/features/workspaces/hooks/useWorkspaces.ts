@@ -83,11 +83,17 @@ export function useWorkspace(orgId: string, workspaceId: string) {
     return result;
   };
 
+  const deleteWorkspace = async () => {
+    await WorkspaceService.deleteWorkspace(orgId, workspaceId);
+    setData(null);
+  };
+
   return {
     data,
     loading,
     error,
     fetchWorkspace,
     updateWorkspace,
+    deleteWorkspace,
   };
 }

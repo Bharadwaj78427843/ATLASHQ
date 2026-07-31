@@ -9,7 +9,7 @@ from app.schemas.knowledge import RepositoryMetadata
 
 @pytest.fixture
 def mock_repository():
-    return MagicMock()
+    return AsyncMock()
 
 @pytest.fixture
 def mock_orchestrator():
@@ -58,7 +58,10 @@ async def test_index_repository_success(indexing_service, mock_repository, mock_
     # Mock Workspace Query
     mock_workspace = MagicMock()
     mock_workspace.organization_id = "org_123"
-    mock_repository.db.query.return_value.filter.return_value.first.return_value = mock_workspace
+    
+    mock_db_result = MagicMock()
+    mock_db_result.scalar_one_or_none.return_value = mock_workspace
+    mock_repository.db.execute.return_value = mock_db_result
 
     mock_storage.get_repository_path.return_value = "/tmp/repo"
     mock_git_service.clone_or_pull.return_value = GitCloneResult(path="/tmp/repo", default_branch="main", newly_cloned=True)
@@ -100,6 +103,17 @@ async def test_index_repository_clone_failure(indexing_service, mock_repository,
     mock_repository.get_source.return_value = source
     mock_repository.create_index_job.return_value = job
     
+    mock_workspace = MagicMock()
+    mock_workspace.organization_id = "org_123"
+    
+    mock_db_result1 = MagicMock()
+    mock_db_result1.scalar_one_or_none.return_value = mock_workspace
+    
+    mock_db_result2 = MagicMock()
+    mock_db_result2.scalar_one_or_none.return_value = job
+    
+    mock_repository.db.execute.side_effect = [mock_db_result1, mock_db_result2]
+
     mock_git_service.clone_or_pull.side_effect = Exception("Git error")
 
     await indexing_service.index_source(source_id)

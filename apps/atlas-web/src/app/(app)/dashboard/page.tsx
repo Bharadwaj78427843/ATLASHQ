@@ -1,243 +1,233 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  AlertCircle,
+  Bot,
+  Folder,
+  GitBranch,
+  Rocket,
+  Search,
+  UploadCloud,
+  Plus,
+  Activity,
+  FileText,
+  Shield,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspaceSelection } from "@/hooks/useWorkspaceSelection";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { Button } from "@/components/ui/Button";
-import { Folder, GitBranch, Rocket, Bot, AlertCircle, UploadCloud, FileCode2, BookText, ScrollText, Database as DatabaseIcon, Zap, Network, Box } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
+import { aiApi } from "@/features/ai";
+import { projectsApi } from "@/features/projects/api";
+import { knowledgeApi } from "@/lib/api";
+import { environmentsApi } from "@/features/environments/api";
 
-// ─── STATIC DATA ─────────────────────────────────────────────────────────────
-// Moved outside components to prevent recreation on every render
-
-const RECENT_ACTIVITY = [
-  { title: "Deployment to Production", sub: "atlas-backend", time: "2m ago", status: "success", icon: <Box className="w-3.5 h-3.5" /> },
-  { title: "Push to main", sub: "atlas-frontend", time: "15m ago", status: "success", icon: <GitBranch className="w-3.5 h-3.5" /> },
-  { title: "New issue created", sub: "atlas-backend", time: "1h ago", status: "error", icon: <AlertCircle className="w-3.5 h-3.5" /> },
-  { title: "AI Agent completed task", sub: "Code Review", time: "2h ago", status: "success", icon: <Bot className="w-3.5 h-3.5" /> }
-];
-
-const DEPLOYMENT_TIMELINE = [
-  { name: "Production", time: "2m ago", status: "Success", color: "var(--color-accent-green)" },
-  { name: "Staging", time: "15m ago", status: "Success", color: "var(--color-accent-green)" },
-  { name: "Preview", sub: "v2.4.0", status: "Success", color: "var(--color-primary-light)" },
-  { name: "Development", time: "2h ago", status: "Success", color: "var(--color-primary-light)" }
-];
-
-const REPO_HEALTH = [
-  { label: "Code Quality", value: 96, color: "var(--color-accent-green)" },
-  { label: "Test Coverage", value: 92, color: "var(--color-accent-green)" },
-  { label: "Security", value: 99, color: "var(--color-accent-green)" },
-  { label: "Performance", value: 97, color: "var(--color-accent-green)" }
-];
-
-// ─── ISOLATED COMPONENTS ─────────────────────────────────────────────────────
-
-// 1. AI Command Input
-// Isolating state here ensures typing only re-renders this tiny input box, not the huge dashboard DOM.
-const AiCommandInput = React.memo(() => {
-  const [prompt, setPrompt] = useState("");
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
-  const [isAsking, setIsAsking] = useState(false);
-
-  const handleAskAtlas = async () => {
-    if (!prompt.trim()) return;
-    setIsAsking(true);
-    try {
-      const { aiApi } = await import("@/features/ai");
-      const res = await aiApi.chat(prompt);
-      setAiResponse(res.response);
-      setPrompt("");
-    } catch (err) {
-      console.error("AI Error:", err);
-      setAiResponse("Sorry, Atlas encountered an error.");
-    } finally {
-      setIsAsking(false);
-    }
+type DashboardStats = {
+  projectCount: number;
+  repositoryCount: number;
+  sourceCount: number;
+  deploymentCount: number;
+  agentCount: number;
+  openIssueCount: number;
+  recentActivity: Array<{ title: string; sub: string; time: string; status: "success" | "error" | "info" }>;
+  repoHealth: {
+    readyRate: number;
+    failureRate: number;
+    freshnessRate: number;
+    overall: number;
   };
+  timeline: Array<{ name: string; status: string; time: string }>;
+};
 
+function relativeTime(iso: string): string {
+  const time = new Date(iso).getTime();
+  if (Number.isNaN(time)) {
+    return "unknown";
+  }
+
+  const diffMs = Date.now() - time;
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function DashboardSkeleton() {
   return (
-    <GlassPanel className="p-1 mb-8" glow>
-      <div className="p-4 border-b border-[var(--color-border-subtle)] flex items-center gap-2">
-        <span className="text-[var(--color-primary-base)]">✦</span>
-        <span className="text-sm font-semibold text-[var(--color-text-primary)]">Ask Atlas anything</span>
+    <div className="space-y-6">
+      <GlassPanel className="p-6">
+        <SkeletonLoader lines={3} />
+      </GlassPanel>
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <GlassPanel key={index} className="p-4">
+            <SkeletonLoader lines={2} />
+          </GlassPanel>
+        ))}
       </div>
-      <div className="p-4">
-        <textarea 
-          className="w-full bg-transparent border-none outline-none text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] resize-none h-16"
-          placeholder="What do you want to build, fix, or analyze?"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleAskAtlas();
-            }
-          }}
-        />
-        {aiResponse && (
-          <div className="mt-4 p-4 rounded bg-[rgba(124,58,237,0.1)] border border-[rgba(124,58,237,0.2)] text-sm">
-            <div className="font-semibold text-[var(--color-primary-light)] mb-1">Atlas says:</div>
-            <div className="whitespace-pre-wrap">{aiResponse}</div>
-          </div>
-        )}
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex gap-2 flex-wrap">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.05)] text-xs font-medium text-[var(--color-text-secondary)] transition-colors">
-              <UploadCloud className="w-3.5 h-3.5" /> Upload files
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.05)] text-xs font-medium text-[var(--color-text-secondary)] transition-colors">
-              <FileCode2 className="w-3.5 h-3.5" /> Attach repo
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.05)] text-xs font-medium text-[var(--color-text-secondary)] transition-colors">
-              <BookText className="w-3.5 h-3.5" /> Add docs
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.05)] text-xs font-medium text-[var(--color-text-secondary)] transition-colors">
-              <ScrollText className="w-3.5 h-3.5" /> Add logs
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.05)] text-xs font-medium text-[var(--color-text-secondary)] transition-colors">
-              <DatabaseIcon className="w-3.5 h-3.5" /> Connect DB
-            </button>
-          </div>
-          <Button variant="primary" size="icon" className="h-9 w-9" onClick={handleAskAtlas} disabled={isAsking}>
-            {isAsking ? <span className="spinner-ring" /> : <span className="text-lg leading-none transform -rotate-45 block relative -top-0.5 -right-0.5">➤</span>}
-          </Button>
-        </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <GlassPanel className="p-5"><SkeletonLoader lines={6} /></GlassPanel>
+        <GlassPanel className="p-5"><SkeletonLoader lines={6} /></GlassPanel>
+        <GlassPanel className="p-5"><SkeletonLoader lines={6} /></GlassPanel>
       </div>
-      <div className="bg-[rgba(0,0,0,0.2)] px-4 py-3 border-t border-[var(--color-border-subtle)] flex gap-4 overflow-x-auto">
-        <button className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors whitespace-nowrap">
-          <Zap className="w-3 h-3" /> Analyze codebase
-        </button>
-        <button className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors whitespace-nowrap">
-          <Network className="w-3 h-3" /> Explain architecture
-        </button>
-        <button className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors whitespace-nowrap">
-          <AlertCircle className="w-3 h-3" /> Find bugs
-        </button>
-      </div>
-    </GlassPanel>
+    </div>
   );
-});
-AiCommandInput.displayName = "AiCommandInput";
-
-// 2. Metrics Grid (Memoized)
-const MetricsGrid = React.memo(() => (
-  <div className="grid grid-cols-5 gap-4 mb-8">
-    <MetricCard title="Projects" value="8" trend="2 this week" trendDirection="up" icon={<Folder className="w-4 h-4" />} />
-    <MetricCard title="Repositories" value="16" trend="3 this week" trendDirection="up" icon={<GitBranch className="w-4 h-4 text-blue-500" />} />
-    <MetricCard title="Deployments" value="24" trend="6 this week" trendDirection="up" icon={<Rocket className="w-4 h-4 text-green-500" />} />
-    <MetricCard title="AI Agents" value="7" trend="1 this week" trendDirection="up" icon={<Bot className="w-4 h-4 text-purple-500" />} />
-    <MetricCard title="Open Issues" value="12" trend="4 this week" trendDirection="down" icon={<AlertCircle className="w-4 h-4 text-red-500" />} />
-  </div>
-));
-MetricsGrid.displayName = "MetricsGrid";
-
-// 3. Information Columns (Memoized)
-const InfoColumns = React.memo(() => (
-  <div className="grid grid-cols-3 gap-6">
-    {/* Recent Activity */}
-    <GlassPanel className="p-5">
-      <h3 className="text-sm font-semibold mb-4 text-[var(--color-text-primary)]">Recent Activity</h3>
-      <div className="space-y-4">
-        {RECENT_ACTIVITY.map((act, i) => (
-          <div key={i} className="flex gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${act.status === 'success' ? 'bg-[rgba(34,197,94,0.1)] text-[var(--color-accent-green)]' : 'bg-[rgba(239,68,68,0.1)] text-[var(--color-accent-red)]'}`}>
-              {act.icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-[var(--color-text-primary)] truncate">{act.title}</p>
-              <p className="text-[10px] text-[var(--color-text-secondary)]">{act.sub}</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-[10px] text-[var(--color-text-muted)] mb-1">{act.time}</p>
-              <div className={`w-3 h-3 rounded-full border border-[rgba(255,255,255,0.2)] ml-auto flex items-center justify-center ${act.status === 'success' ? 'text-[var(--color-accent-green)]' : 'text-[var(--color-accent-red)]'}`}>
-                <span className="text-[8px]">✓</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <button className="text-xs text-[var(--color-primary-light)] mt-4 hover:underline block">View all activity →</button>
-    </GlassPanel>
-
-    {/* Deployment Timeline */}
-    <GlassPanel className="p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Deployment Timeline</h3>
-        <button className="text-xs text-[var(--color-primary-light)] hover:underline">View all</button>
-      </div>
-      <div className="relative pl-3 space-y-6 before:absolute before:inset-0 before:ml-[15px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-[var(--color-border-subtle)]">
-        {DEPLOYMENT_TIMELINE.map((dep, i) => (
-          <div key={i} className="relative flex items-start gap-4">
-            <div className="absolute left-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--color-background)]" style={{ backgroundColor: dep.color, top: '4px' }} />
-            <div className="pl-6 w-full">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs font-medium text-[var(--color-text-primary)]">{dep.name}</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)]">{dep.sub || dep.time}</p>
-                </div>
-                <span className="text-[10px] font-medium text-[var(--color-accent-green)] flex items-center gap-1">
-                  ✓ {dep.status}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </GlassPanel>
-
-    {/* Repository Health */}
-    <GlassPanel className="p-5">
-      <h3 className="text-sm font-semibold mb-6 text-[var(--color-text-primary)]">Repository Health</h3>
-      
-      <div className="mb-6">
-        <div className="flex justify-between items-end mb-2">
-          <span className="text-xs text-[var(--color-text-secondary)]">Overall Health</span>
-          <span className="text-xl font-bold text-[var(--color-text-primary)]">98%</span>
-        </div>
-        <div className="w-full bg-[rgba(255,255,255,0.05)] h-2 rounded-full overflow-hidden">
-          <div className="bg-[var(--color-accent-green)] h-full rounded-full" style={{ width: '98%' }} />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {REPO_HEALTH.map((stat, i) => (
-          <div key={i}>
-            <div className="flex justify-between text-[11px] mb-1">
-              <span className="text-[var(--color-text-secondary)] flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: stat.color }} />
-                {stat.label}
-              </span>
-              <span className="font-medium text-[var(--color-text-primary)]">{stat.value}%</span>
-            </div>
-            <div className="w-full bg-[rgba(255,255,255,0.05)] h-1 rounded-full overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${stat.value}%`, backgroundColor: stat.color }} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <button className="text-xs text-[var(--color-primary-light)] mt-6 hover:underline block">View full report →</button>
-    </GlassPanel>
-  </div>
-));
-InfoColumns.displayName = "InfoColumns";
-
-
-// ─── MAIN PAGE COMPONENT ─────────────────────────────────────────────────────
+}
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { activeOrganization, activeWorkspace, isLoading: workspaceLoading } = useWorkspaceSelection();
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  const workspaceId = activeWorkspace?.id || "";
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authLoading && !user) {
       router.replace("/login");
     }
-  }, [isLoading, user, router]);
+  }, [authLoading, user, router]);
 
-  if (isLoading || !user) {
+  const loadDashboard = useCallback(async () => {
+    if (!workspaceId) {
+      setStats(null);
+      setIsLoadingStats(false);
+      return;
+    }
+
+    try {
+      setStatsError(null);
+      setIsLoadingStats(true);
+
+      const projects = await projectsApi.list(workspaceId, 0, 100);
+      const sources = await knowledgeApi.listSources(workspaceId);
+
+      const repositories = sources.filter((source) => source.source_type.toLowerCase() === "repository");
+      const nonRepositorySources = sources.filter((source) => source.source_type.toLowerCase() !== "repository");
+
+      const jobsBySource = await Promise.all(sources.map((source) => knowledgeApi.listJobs(source.id)));
+      const allJobs = jobsBySource.flat();
+
+      const providersResult = await aiApi.getProviders().catch(() => ({ providers: [] }));
+      const activeProviderCount = providersResult.providers.filter((provider) => provider.is_active).length;
+
+      const deploymentBatches = await Promise.all(
+        projects.items.map((project) =>
+          environmentsApi.list(workspaceId, project.id, 0, 100).catch(() => ({ items: [], total: 0, skip: 0, limit: 100 }))
+        )
+      );
+      const deploymentCount = deploymentBatches.reduce((acc, batch) => acc + batch.items.length, 0);
+
+      const failedRepos = repositories.filter((repo) => repo.status.toLowerCase() === "failed").length;
+      const readyRepos = repositories.filter((repo) => repo.status.toLowerCase() === "ready").length;
+      const recentlySynced = repositories.filter((repo) => {
+        const metadata = repo.metadata_json as { last_sync?: string } | null;
+        if (!metadata?.last_sync) {
+          return false;
+        }
+        const ms = Date.now() - new Date(metadata.last_sync).getTime();
+        return ms >= 0 && ms <= 7 * 24 * 60 * 60 * 1000;
+      }).length;
+
+      const repoTotal = repositories.length;
+      const readyRate = repoTotal > 0 ? (readyRepos / repoTotal) * 100 : 0;
+      const failureRate = repoTotal > 0 ? (failedRepos / repoTotal) * 100 : 0;
+      const freshnessRate = repoTotal > 0 ? (recentlySynced / repoTotal) * 100 : 0;
+      const overall = repoTotal > 0 ? (readyRate * 0.5 + freshnessRate * 0.35 + (100 - failureRate) * 0.15) : 0;
+
+      const recentActivity: DashboardStats["recentActivity"] = [
+        ...projects.items.slice(0, 3).map((project) => ({
+          title: "Project updated",
+          sub: project.name,
+          time: relativeTime(project.updated_at),
+          status: "success" as const,
+        })),
+        ...sources.slice(0, 3).map((source) => ({
+          title: source.source_type.toLowerCase() === "repository" ? "Repository connected" : "Knowledge source added",
+          sub: source.name,
+          time: relativeTime(source.updated_at),
+          status: source.status.toLowerCase() === "failed" ? "error" as const : "info" as const,
+        })),
+      ]
+        .sort((a, b) => {
+          const aTime = a.time === "just now" ? 0 : 1;
+          const bTime = b.time === "just now" ? 0 : 1;
+          return aTime - bTime;
+        })
+        .slice(0, 6);
+
+      const timeline = allJobs
+        .slice()
+        .sort((a, b) => {
+          const aTime = new Date(a.started_at || 0).getTime();
+          const bTime = new Date(b.started_at || 0).getTime();
+          return bTime - aTime;
+        })
+        .slice(0, 5)
+        .map((job) => ({
+          name: "Index job",
+          status: job.status,
+          time: relativeTime(job.started_at || job.completed_at || new Date().toISOString()),
+        }));
+
+      setStats({
+        projectCount: projects.total,
+        repositoryCount: repositories.length,
+        sourceCount: nonRepositorySources.length,
+        deploymentCount,
+        agentCount: activeProviderCount,
+        openIssueCount: failedRepos + allJobs.filter((job) => job.status.toLowerCase() === "failed").length,
+        recentActivity,
+        repoHealth: {
+          readyRate: clampPercent(readyRate),
+          failureRate: clampPercent(failureRate),
+          freshnessRate: clampPercent(freshnessRate),
+          overall: clampPercent(overall),
+        },
+        timeline,
+      });
+    } catch (err: unknown) {
+      setStatsError(err instanceof Error ? err.message : "Failed to load dashboard data.");
+      setStats(null);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (mounted) {
+      loadDashboard().catch(console.error);
+    }
+    return () => { mounted = false; };
+  }, [loadDashboard]);
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
+  if (authLoading || !user) {
     return (
       <div className="h-screen flex items-center justify-center bg-[var(--color-background)]">
         <span className="spinner-ring" />
@@ -248,34 +238,167 @@ export default function DashboardPage() {
   const displayName = user.first_name || user.username;
 
   return (
-    <div className="p-8">
-      {/* Header Greeting */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-3 tracking-tight">
-          Good morning, <span className="text-gradient">{displayName}!</span> 👋
-        </h1>
-        <p className="text-[var(--color-text-secondary)] text-sm mb-4">
-          Atlas AI is ready to help you build, deploy, and scale.
-        </p>
-        
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-sm)] border border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.1)] text-[var(--color-accent-green)] text-[10px] font-semibold uppercase tracking-wider">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-green)]" />
-            Workspace: Atlas Backend
+    <div className="p-8 space-y-6">
+      <GlassPanel className="p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2 tracking-tight">
+              {greeting}, <span className="text-gradient">{displayName}</span>
+            </h1>
+            <p className="text-[var(--color-text-secondary)] text-sm">Atlas dashboard is showing live workspace activity and readiness.</p>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-sm)] border border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.1)] text-[var(--color-accent-green)] text-[10px] font-semibold uppercase tracking-wider">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-green)]" />
-            Environment: Production
-          </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-sm)] border border-[rgba(124,58,237,0.3)] bg-[rgba(124,58,237,0.1)] text-[var(--color-primary-light)] text-[10px] font-semibold uppercase tracking-wider">
-            ✦ AI Context: Ready
+          <div className="flex flex-wrap gap-2">
+            <span className="px-2.5 py-1 rounded-[var(--radius-sm)] border border-[rgba(124,58,237,0.3)] bg-[rgba(124,58,237,0.1)] text-[var(--color-primary-light)] text-[10px] font-semibold uppercase tracking-wider">
+              Organization: {activeOrganization?.name || "Not selected"}
+            </span>
+            <span className="px-2.5 py-1 rounded-[var(--radius-sm)] border border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.1)] text-[var(--color-accent-green)] text-[10px] font-semibold uppercase tracking-wider">
+              Workspace: {activeWorkspace?.name || "Not selected"}
+            </span>
           </div>
         </div>
-      </div>
 
-      <AiCommandInput />
-      <MetricsGrid />
-      <InfoColumns />
+        <div className="mt-5 grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Link href={workspaceId ? `/organizations/${activeOrganization?.id}/workspaces/${workspaceId}/projects/new` : "/organizations"}>
+            <Button className="w-full gap-2" variant="secondary"><Plus className="w-4 h-4" />New Project</Button>
+          </Link>
+          <Link href={workspaceId ? `/organizations/${activeOrganization?.id}/workspaces/${workspaceId}/knowledge/upload` : "/knowledge"}>
+            <Button className="w-full gap-2" variant="secondary"><UploadCloud className="w-4 h-4" />Upload Knowledge</Button>
+          </Link>
+          <Link href={workspaceId ? `/organizations/${activeOrganization?.id}/workspaces/${workspaceId}/knowledge/repositories` : "/repositories"}>
+            <Button className="w-full gap-2" variant="secondary"><GitBranch className="w-4 h-4" />Connect Repository</Button>
+          </Link>
+          <Link href={workspaceId ? `/organizations/${activeOrganization?.id}/workspaces/${workspaceId}/projects` : "/projects"}>
+            <Button className="w-full gap-2" variant="secondary"><Rocket className="w-4 h-4" />New Deployment</Button>
+          </Link>
+          <Link href="/dashboard">
+            <Button className="w-full gap-2" variant="primary"><Bot className="w-4 h-4" />Ask Atlas</Button>
+          </Link>
+        </div>
+      </GlassPanel>
+
+      {workspaceLoading || isLoadingStats ? <DashboardSkeleton /> : null}
+
+      {!workspaceLoading && !isLoadingStats && !activeWorkspace ? (
+        <EmptyState
+          icon={Folder}
+          title="No workspace selected"
+          description="Create or select a workspace to unlock project, repository, and knowledge insights."
+          actionLabel="Go to Organizations"
+          onAction={() => router.push("/organizations")}
+        />
+      ) : null}
+
+      {statsError ? <ErrorState title="Dashboard unavailable" error={statsError} onRetry={() => void loadDashboard()} /> : null}
+
+      {stats && !statsError ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
+            <MetricCard title="Projects" value={String(stats.projectCount)} icon={<Folder className="w-4 h-4" />} />
+            <MetricCard title="Repositories" value={String(stats.repositoryCount)} icon={<GitBranch className="w-4 h-4" />} />
+            <MetricCard title="Knowledge Sources" value={String(stats.sourceCount)} icon={<FileText className="w-4 h-4" />} />
+            <MetricCard title="Deployments" value={String(stats.deploymentCount)} icon={<Rocket className="w-4 h-4" />} />
+            <MetricCard title="Agents" value={String(stats.agentCount)} icon={<Bot className="w-4 h-4" />} />
+            <MetricCard title="Open Issues" value={String(stats.openIssueCount)} icon={<AlertCircle className="w-4 h-4" />} />
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <GlassPanel className="p-5">
+              <h3 className="text-sm font-semibold mb-4 text-[var(--color-text-primary)]">Recent Activity</h3>
+              {stats.recentActivity.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-secondary)]">No recent activity yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {stats.recentActivity.map((activity, index) => (
+                    <div key={`${activity.title}-${index}`} className="flex items-start gap-3">
+                      <span className="w-2 h-2 mt-1.5 rounded-full bg-[var(--color-primary-base)]" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-[var(--color-text-primary)] truncate">{activity.title}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{activity.sub}</p>
+                      </div>
+                      <span className="text-xs text-[var(--color-text-muted)]">{activity.time}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </GlassPanel>
+
+            <GlassPanel className="p-5">
+              <h3 className="text-sm font-semibold mb-4 text-[var(--color-text-primary)]">Deployment Timeline</h3>
+              {stats.timeline.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-secondary)]">No deployment timeline entries yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {stats.timeline.map((item, index) => (
+                    <div key={`${item.name}-${index}`} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-[var(--color-primary-light)]" />
+                        <div>
+                          <p className="text-sm text-[var(--color-text-primary)]">{item.name}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">{item.time}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs uppercase text-[var(--color-text-secondary)]">{item.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </GlassPanel>
+
+            <GlassPanel className="p-5">
+              <h3 className="text-sm font-semibold mb-4 text-[var(--color-text-primary)]">Repository Health</h3>
+
+              <div className="mb-4">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-[var(--color-text-secondary)]">Overall Health</span>
+                  <span className="text-[var(--color-text-primary)] font-semibold">{stats.repoHealth.overall}%</span>
+                </div>
+                <div className="h-2 rounded bg-[rgba(255,255,255,0.05)] overflow-hidden">
+                  <div className="h-full bg-[var(--color-accent-green)]" style={{ width: `${stats.repoHealth.overall}%` }} />
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <div className="flex justify-between mb-1"><span>Ready Rate</span><span>{stats.repoHealth.readyRate}%</span></div>
+                  <div className="h-1.5 rounded bg-[rgba(255,255,255,0.05)] overflow-hidden">
+                    <div className="h-full bg-[var(--color-accent-green)]" style={{ width: `${stats.repoHealth.readyRate}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1"><span>Freshness</span><span>{stats.repoHealth.freshnessRate}%</span></div>
+                  <div className="h-1.5 rounded bg-[rgba(255,255,255,0.05)] overflow-hidden">
+                    <div className="h-full bg-[var(--color-accent-blue)]" style={{ width: `${stats.repoHealth.freshnessRate}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1"><span>Failure Rate</span><span>{stats.repoHealth.failureRate}%</span></div>
+                  <div className="h-1.5 rounded bg-[rgba(255,255,255,0.05)] overflow-hidden">
+                    <div className="h-full bg-[var(--color-accent-red)]" style={{ width: `${stats.repoHealth.failureRate}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <Link href={workspaceId ? `/organizations/${activeOrganization?.id}/workspaces/${workspaceId}/knowledge/repositories` : "/repositories"}>
+                  <Button size="sm" variant="secondary" className="gap-2">
+                    <Shield className="w-3.5 h-3.5" /> View Repositories
+                  </Button>
+                </Link>
+              </div>
+            </GlassPanel>
+          </div>
+
+          {stats.projectCount === 0 && stats.repositoryCount === 0 && stats.sourceCount === 0 ? (
+            <EmptyState
+              icon={Folder}
+              title="Your workspace is ready"
+              description="Create your first project, upload knowledge, or connect a repository to start building with AtlasHQ."
+              actionLabel="Create Project"
+              onAction={() => router.push(`/organizations/${activeOrganization?.id}/workspaces/${workspaceId}/projects/new`)}
+            />
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }

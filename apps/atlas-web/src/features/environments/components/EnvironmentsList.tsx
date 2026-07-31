@@ -11,14 +11,15 @@ import { Button } from "@/components/ui/Button";
 export function EnvironmentsList({ orgId, workspaceId, projectId }: { orgId: string, workspaceId: string, projectId: string }) {
   const { user } = useAuth();
   const { data: environments, loading, error, fetchEnvironments } = useEnvironments(workspaceId, projectId);
-  const { data: members } = useOrganizationMembers(orgId);
+  const { data: members, fetchMembers } = useOrganizationMembers(orgId);
 
   useEffect(() => {
     fetchEnvironments();
-  }, [fetchEnvironments]);
+    fetchMembers();
+  }, [fetchEnvironments, fetchMembers]);
 
   const currentMember = members?.items.find(m => m.user_id === user?.id);
-  const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN" || currentMember?.role === "MEMBER";
+  const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
 
   if (loading && !environments) {
     return <div className="py-12 text-center"><span className="spinner-ring" /></div>;

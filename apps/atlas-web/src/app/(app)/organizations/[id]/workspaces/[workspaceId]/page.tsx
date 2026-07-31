@@ -3,29 +3,35 @@
 import React, { useState, FormEvent, use } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/features/workspaces";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizationMembers } from "@/features/organizations";
 import { ProjectsList } from "@/features/projects";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Button } from "@/components/ui/Button";
 
 export default function WorkspaceDetailsPage({ params }: { params: Promise<{ id: string, workspaceId: string }> }) {
   const resolvedParams = use(params);
+  const router = useRouter();
   const orgId = resolvedParams.id;
   const workspaceId = resolvedParams.workspaceId;
 
 
   const { user } = useAuth();
-  const { data: members } = useOrganizationMembers(orgId);
-  const { data: workspace, loading, error, fetchWorkspace, updateWorkspace } = useWorkspace(orgId, workspaceId);
+  const { data: members, fetchMembers } = useOrganizationMembers(orgId);
+  const { data: workspace, loading, error, fetchWorkspace, updateWorkspace, deleteWorkspace } = useWorkspace(orgId, workspaceId);
 
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   React.useEffect(() => {
     fetchWorkspace();
-  }, [fetchWorkspace]);
+    fetchMembers();
+  }, [fetchWorkspace, fetchMembers]);
 
   const currentMember = members?.items.find(m => m.user_id === user?.id);
   const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
@@ -91,6 +97,13 @@ export default function WorkspaceDetailsPage({ params }: { params: Promise<{ id:
         {canManage && workspace.is_active && !isEditing && (
           <div style={{ display: "flex", gap: "12px", marginTop: "32px" }}>
             <button className="btn-ghost" onClick={handleEditStart}>Edit Workspace</button>
+            <button
+              className="btn-ghost"
+              style={{ color: "var(--error)", borderColor: "rgba(239,68,68,0.3)" }}
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              Delete Workspace
+            </button>
           </div>
         )}
       </div>
@@ -151,11 +164,53 @@ export default function WorkspaceDetailsPage({ params }: { params: Promise<{ id:
               <dt>Created</dt>
               <dd>{new Date(workspace.created_at).toLocaleDateString()}</dd>
             </dl>
+
+            <div style={{ marginTop: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/projects`}>
+                <Button variant="secondary" size="sm">Projects</Button>
+              </Link>
+              <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/knowledge`}>
+                <Button variant="secondary" size="sm">Knowledge Hub</Button>
+              </Link>
+              <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/knowledge/repositories`}>
+                <Button variant="secondary" size="sm">Repositories</Button>
+              </Link>
+              {canManage ? (
+                <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/projects/new`}>
+                  <Button variant="primary" size="sm">New Project</Button>
+                </Link>
+              ) : null}
+            </div>
           </>
         )}
       </div>
 
       <ProjectsList orgId={orgId} workspaceId={workspaceId} />
+
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Delete Workspace"
+        description={`Delete workspace \"${workspace.name}\"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        isLoading={isSubmitting}
+        onCancel={() => setShowDeleteDialog(false)}
+        onConfirm={async () => {
+          setIsSubmitting(true);
+          setEditError(null);
+          try {
+            await deleteWorkspace();
+            router.push(`/organizations/${orgId}`);
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to delete workspace";
+            setEditError(errorMessage);
+          } finally {
+            setIsSubmitting(false);
+            setShowDeleteDialog(false);
+          }
+        }}
+      />
     </div>
   );
 }

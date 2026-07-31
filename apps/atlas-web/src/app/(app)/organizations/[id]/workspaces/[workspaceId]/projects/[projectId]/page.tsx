@@ -3,33 +3,39 @@
 import React, { useState, FormEvent, use, useEffect } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useProject } from "@/features/projects";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganizationMembers } from "@/features/organizations";
 import { EnvironmentsList } from "@/features/environments";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Button } from "@/components/ui/Button";
 
 export default function ProjectDetailsPage({ params }: { params: Promise<{ id: string, workspaceId: string, projectId: string }> }) {
   const resolvedParams = use(params);
+  const router = useRouter();
   const orgId = resolvedParams.id;
   const workspaceId = resolvedParams.workspaceId;
   const projectId = resolvedParams.projectId;
 
 
   const { user } = useAuth();
-  const { data: members } = useOrganizationMembers(orgId);
-  const { data: project, loading, error, fetchProject, updateProject } = useProject(workspaceId, projectId);
+  const { data: members, fetchMembers } = useOrganizationMembers(orgId);
+  const { data: project, loading, error, fetchProject, updateProject, deleteProject } = useProject(workspaceId, projectId);
 
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     fetchProject();
-  }, [fetchProject]);
+    fetchMembers();
+  }, [fetchProject, fetchMembers]);
 
   const currentMember = members?.items.find(m => m.user_id === user?.id);
-  const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN" || currentMember?.role === "MEMBER";
+  const canManage = currentMember?.role === "OWNER" || currentMember?.role === "ADMIN";
 
   function handleEditStart() {
     if (!project) return;
@@ -91,6 +97,13 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
         {canManage && project.is_active && !isEditing && (
           <div style={{ display: "flex", gap: "12px", marginTop: "32px" }}>
             <button className="btn-ghost" onClick={handleEditStart}>Edit Project</button>
+            <button
+              className="btn-ghost"
+              style={{ color: "var(--error)", borderColor: "rgba(239,68,68,0.3)" }}
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              Delete Project
+            </button>
           </div>
         )}
       </div>
@@ -151,11 +164,50 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
               <dt>Created</dt>
               <dd>{new Date(project.created_at).toLocaleDateString()}</dd>
             </dl>
+
+            <div style={{ marginTop: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/projects`}>
+                <Button variant="secondary" size="sm">All Projects</Button>
+              </Link>
+              <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/knowledge`}>
+                <Button variant="secondary" size="sm">Knowledge Hub</Button>
+              </Link>
+              {canManage ? (
+                <Link href={`/organizations/${orgId}/workspaces/${workspaceId}/projects/${projectId}/environments/new`}>
+                  <Button variant="primary" size="sm">New Environment</Button>
+                </Link>
+              ) : null}
+            </div>
           </>
         )}
       </div>
 
       <EnvironmentsList orgId={orgId} workspaceId={workspaceId} projectId={projectId} />
+
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Delete Project"
+        description={`Delete project \"${project.name}\"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        isLoading={isSubmitting}
+        onCancel={() => setShowDeleteDialog(false)}
+        onConfirm={async () => {
+          setIsSubmitting(true);
+          setEditError(null);
+          try {
+            await deleteProject();
+            router.push(`/organizations/${orgId}/workspaces/${workspaceId}/projects`);
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to delete project";
+            setEditError(errorMessage);
+          } finally {
+            setIsSubmitting(false);
+            setShowDeleteDialog(false);
+          }
+        }}
+      />
 
     </div>
   );

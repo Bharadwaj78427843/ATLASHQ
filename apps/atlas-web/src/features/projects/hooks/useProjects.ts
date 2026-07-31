@@ -83,11 +83,17 @@ export function useProject(workspaceId: string, projectId: string) {
     return result;
   };
 
+  const deleteProject = async () => {
+    await ProjectService.deleteProject(workspaceId, projectId);
+    setData(null);
+  };
+
   return {
     data,
     loading,
     error,
     fetchProject,
     updateProject,
+    deleteProject,
   };
 }

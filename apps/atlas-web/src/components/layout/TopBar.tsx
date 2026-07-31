@@ -5,15 +5,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Search, Command } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useActiveOrganization } from "@/contexts/OrganizationContext"
-import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces"
+import { useWorkspaceSelection } from "@/hooks/useWorkspaceSelection"
 import { Button } from "@/components/ui/Button"
 
 export function TopBar() {
   const { user } = useAuth()
   const router = useRouter()
-  const { activeOrganization } = useActiveOrganization()
-  const { data: workspacesData } = useWorkspaces(activeOrganization?.id || "")
+  const { activeOrganization, activeWorkspace, workspaces, setWorkspaceId } = useWorkspaceSelection()
   const [query, setQuery] = useState("")
 
   const initials = user
@@ -23,8 +21,6 @@ export function TopBar() {
   const displayName = user
     ? ([user.first_name, user.last_name].filter(Boolean).join(" ") || user.username)
     : "Guest"
-
-  const activeWorkspace = workspacesData?.items?.[0]
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,16 +38,38 @@ export function TopBar() {
 
       {/* Workspace Switcher */}
       <div className="flex items-center gap-2">
-        <Link
-          href={activeOrganization ? `/organizations/${activeOrganization.id}` : "/organizations"}
-          className="flex items-center gap-2 bg-[var(--color-panel)] border border-[var(--color-border-subtle)] px-3 py-1.5 rounded-[var(--radius-md)] cursor-pointer hover:border-[rgba(255,255,255,0.2)] transition-colors"
-        >
-          <div className="w-5 h-5 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white">
-            {activeOrganization?.name?.[0]?.toUpperCase() || "A"}
+        {activeOrganization ? (
+          <div className="flex items-center gap-2 bg-[var(--color-panel)] border border-[var(--color-border-subtle)] px-3 py-1.5 rounded-[var(--radius-md)]">
+            <div className="w-5 h-5 rounded bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white">
+              {activeOrganization.name?.[0]?.toUpperCase() || "A"}
+            </div>
+            <Link href={`/organizations/${activeOrganization.id}`} className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+              {activeOrganization.name}
+            </Link>
+            {workspaces.length > 0 ? (
+              <select
+                value={activeWorkspace?.id || ""}
+                onChange={(e) => setWorkspaceId(e.target.value)}
+                className="bg-transparent text-sm font-medium focus:outline-none"
+              >
+                {workspaces.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-sm font-medium">Select Workspace</span>
+            )}
           </div>
-          <span className="text-sm font-medium">{activeWorkspace?.name || activeOrganization?.name || "Select Workspace"}</span>
-          <span className="text-[10px] text-[var(--color-text-muted)] ml-2">▼</span>
-        </Link>
+        ) : (
+          <Link
+            href="/organizations"
+            className="flex items-center gap-2 bg-[var(--color-panel)] border border-[var(--color-border-subtle)] px-3 py-1.5 rounded-[var(--radius-md)] cursor-pointer hover:border-[rgba(255,255,255,0.2)] transition-colors"
+          >
+            <span className="text-sm font-medium">Select Workspace</span>
+          </Link>
+        )}
       </div>
 
       {/* Global Search */}
@@ -75,7 +93,7 @@ export function TopBar() {
       <div className="flex items-center gap-4">
         <Link href="/dashboard">
           <Button variant="primary" size="sm" className="rounded-full gap-1.5 px-4 font-semibold">
-            <span>✦</span> Ask Atlas
+            <span>✦</span> Atlas Chat
           </Button>
         </Link>
 

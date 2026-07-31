@@ -1,23 +1,35 @@
 "use client"
 
 import React, { useEffect, useState, use } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Activity, RefreshCw } from "lucide-react"
 import { GlassPanel } from "@/components/ui/GlassPanel"
 import { Button } from "@/components/ui/Button"
 import { knowledgeApi, IndexJob, KnowledgeSource } from "@/lib/api"
 import { getAccessToken } from "@/lib/auth"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { ErrorState } from "@/components/ui/ErrorState"
+import { SkeletonLoader } from "@/components/ui/SkeletonLoader"
 
 export default function KnowledgeJobsPage({ params }: { params: Promise<{ id: string; workspaceId: string }> }) {
   const resolvedParams = use(params)
+  const router = useRouter()
   const [sources, setSources] = useState<KnowledgeSource[]>([])
   const [jobs, setJobs] = useState<IndexJob[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchData = React.useCallback(async () => {
     const token = getAccessToken()
-    if (!token) return
+    if (!token) {
+      setError("Authentication required. Please sign in again.")
+      setIsLoading(false)
+      return
+    }
     try {
       setIsLoading(true)
+      setError(null)
       // Fetch all sources first to get their IDs
       const sourceData = await knowledgeApi.listSources(resolvedParams.workspaceId)
       setSources(sourceData)
@@ -32,8 +44,9 @@ export default function KnowledgeJobsPage({ params }: { params: Promise<{ id: st
       // Sort jobs by started_at descending
       allJobs.sort((a, b) => new Date(b.started_at || 0).getTime() - new Date(a.started_at || 0).getTime())
       setJobs(allJobs)
-    } catch (err) {
-      console.error(err)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to load indexing jobs"
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -62,11 +75,19 @@ export default function KnowledgeJobsPage({ params }: { params: Promise<{ id: st
         </Button>
       </div>
 
+      {error ? <ErrorState title="Unable to load jobs" error={error} onRetry={() => void fetchData()} /> : null}
+
       <GlassPanel>
         {isLoading ? (
-          <div className="p-8 text-center text-[var(--color-text-muted)]">Loading jobs...</div>
+          <div className="p-6"><SkeletonLoader lines={6} /></div>
         ) : jobs.length === 0 ? (
-          <div className="p-8 text-center text-[var(--color-text-muted)]">No indexing jobs found.</div>
+          <EmptyState
+            icon={Activity}
+            title="No indexing jobs yet"
+            description="Connect a repository or upload a document to create your first indexing job."
+            actionLabel="Connect Repository"
+            onAction={() => router.push(`/organizations/${resolvedParams.id}/workspaces/${resolvedParams.workspaceId}/knowledge/repositories`)}
+          />
         ) : (
           <div className="p-2">
             {jobs.map(job => {
@@ -112,6 +133,14 @@ export default function KnowledgeJobsPage({ params }: { params: Promise<{ id: st
           </div>
         )}
       </GlassPanel>
+
+      {!isLoading && jobs.length === 0 ? (
+        <div className="flex justify-center">
+          <Link href={`/organizations/${resolvedParams.id}/workspaces/${resolvedParams.workspaceId}/knowledge/upload`}>
+            <Button variant="secondary">Upload Knowledge Source</Button>
+          </Link>
+        </div>
+      ) : null}
     </div>
   )
 }
