@@ -1,0 +1,10 @@
+inputs:
+- backend_code_diff
+- frontend_code_diff
+outputs:
+- security_report
+requires:
+- backend_implementation
+- frontend_implementation
+produces:
+- security_audit

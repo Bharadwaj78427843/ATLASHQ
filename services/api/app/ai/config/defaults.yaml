@@ -26,7 +26,7 @@ ai:
     provider: filesystem
     options: {}
   memory:
-    provider: mock
+    provider: org_memory
     options: {}
   prompts:
     provider: filesystem

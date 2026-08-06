@@ -49,6 +49,7 @@ from fastapi import Request
 from app.ai.sdk.sdk import AtlasAISDK
 from app.ai.registry.registry import ProviderRegistry
 from app.ai.orchestration.knowledge_orchestrator import KnowledgeOrchestrator
+from app.ai.skills_runtime.orchestrator import SkillOrchestrator
 from app.ai.prompts.manager import PromptManager
 
 
@@ -87,3 +88,12 @@ def get_prompt_manager(request: Request) -> PromptManager:
             detail="Prompt Manager is not initialized."
         )
     return request.app.state.ai_prompt_manager
+
+def get_ai_skill_orchestrator(request: Request) -> SkillOrchestrator:
+    if not hasattr(request.app.state, "ai_skill_orchestrator"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Skill Orchestrator is not initialized."
+        )
+    return request.app.state.ai_skill_orchestrator
+

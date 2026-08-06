@@ -1,0 +1,4 @@
+test_cases:
+- name: devops_engineer_basic
+  request:
+    prompt: test

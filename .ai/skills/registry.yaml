@@ -1,0 +1,59 @@
+version: 1
+skills:
+  - id: engineering_manager
+    path: .ai/skills/engineering_manager/skill.yaml
+    version: 2.1.0
+    status: active
+    default: true
+  - id: architect
+    path: .ai/skills/architect/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: backend_engineer
+    path: .ai/skills/backend_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: frontend_engineer
+    path: .ai/skills/frontend_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: ai_engineer
+    path: .ai/skills/ai_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: database_engineer
+    path: .ai/skills/database_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: security_engineer
+    path: .ai/skills/security_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: devops_engineer
+    path: .ai/skills/devops_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: qa_engineer
+    path: .ai/skills/qa_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: code_reviewer
+    path: .ai/skills/code_reviewer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: performance_engineer
+    path: .ai/skills/performance_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: documentation_engineer
+    path: .ai/skills/documentation_engineer/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: release_manager
+    path: .ai/skills/release_manager/skill.yaml
+    version: 1.0.0
+    status: active
+  - id: support_engineer
+    path: .ai/skills/support_engineer/skill.yaml
+    version: 1.0.0
+    status: active

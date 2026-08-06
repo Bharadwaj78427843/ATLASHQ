@@ -1,20 +1,18 @@
-import time
-from typing import Any
-
 from app.ai.factory.factory import ProviderFactory
 from app.ai.orchestration.knowledge_orchestrator import KnowledgeOrchestrator
 from app.ai.registry.registry import ProviderRegistry
-from app.ai.registry.types import ProviderCategory
 from app.ai.telemetry.hooks import TelemetryContext
-from app.ai.interfaces.document import DocumentRef
 
-from .chat import ChatPipeline
-from .knowledge import KnowledgePipeline
-from .health import SystemHealth
-from .providers import ProviderListing
 from .agents import AgentPipeline
-from .tools import ToolPipeline
+from .chat import ChatPipeline
+from .health import SystemHealth
+from .knowledge import KnowledgePipeline
 from .memory import MemoryPipeline
+from .providers import ProviderListing
+from .skills import SkillsPipeline
+from .tools import ToolPipeline
+from .orchestration import OrchestrationPipeline
+from .approvals import ApprovalsPipeline
 
 
 class AtlasAISDK:
@@ -24,6 +22,7 @@ class AtlasAISDK:
     AI capabilities, hiding the complexity of registries, factories, and
     orchestration layers.
     """
+
     def __init__(
         self,
         registry: ProviderRegistry,
@@ -31,9 +30,12 @@ class AtlasAISDK:
         orchestrator: KnowledgeOrchestrator,
         telemetry: TelemetryContext,
         runtime,
+        skill_runtime,
         tool_registry,
         tool_executor,
         memory_provider,
+        skill_orchestrator,
+        approval_gate
     ):
         self._registry = registry
         self._factory = factory
@@ -45,8 +47,11 @@ class AtlasAISDK:
         self.health = SystemHealth(registry)
         self.providers = ProviderListing(registry)
         self.agents = AgentPipeline(runtime)
+        self.skills = SkillsPipeline(skill_runtime)
         self.tools = ToolPipeline(tool_registry, tool_executor)
         self.memory = MemoryPipeline(runtime, memory_provider)
+        self.orchestration = OrchestrationPipeline(skill_orchestrator)
+        self.approvals = ApprovalsPipeline(approval_gate)
 
     async def execute(self, **kwargs):
         return await self.agents.execute(**kwargs)
@@ -59,6 +64,3 @@ class AtlasAISDK:
 
     async def cancel(self, execution_id: str):
         return await self.agents.cancel(execution_id)
-
-    async def resume(self, execution_id: str):
-        return await self.agents.resume(execution_id)

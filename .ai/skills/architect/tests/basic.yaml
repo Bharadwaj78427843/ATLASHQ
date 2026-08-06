@@ -1,0 +1,4 @@
+test_cases:
+- name: architect_basic
+  request:
+    prompt: test

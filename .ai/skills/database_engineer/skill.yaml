@@ -1,0 +1,19 @@
+kind: AtlasHQSkillPackage
+name: database_engineer
+display_name: Database Engineer
+version: 1.0.0
+description: AtlasHQ Database Engineer role
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs: []
+  outputs: []
+  requires: []
+  produces: []
+tests:
+- tests/basic.yaml

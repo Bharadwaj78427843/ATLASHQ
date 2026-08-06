@@ -1,0 +1,27 @@
+kind: AtlasHQSkillPackage
+name: architect
+display_name: Software Architect
+version: 2.1.0
+description: Defines system architecture, API contracts, and database schema based
+  on requirements.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - execution_plan
+  outputs:
+  - architecture_document
+  - api_spec
+  requires:
+  - engineering_plan
+  produces:
+  - system_design
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

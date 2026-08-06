@@ -1,0 +1,29 @@
+kind: AtlasHQSkillPackage
+name: documentation_engineer
+display_name: Documentation Engineer
+version: 2.1.0
+description: Writes user-facing documentation and API guides.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - architecture_document
+  - backend_code_diff
+  - frontend_code_diff
+  outputs:
+  - documentation_diff
+  requires:
+  - system_design
+  - backend_implementation
+  - frontend_implementation
+  produces:
+  - updated_docs
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

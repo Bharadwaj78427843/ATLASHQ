@@ -1,0 +1,29 @@
+kind: AtlasHQSkillPackage
+name: release_manager
+display_name: Release Manager
+version: 2.1.0
+description: Verifies all outputs, triggers approval gates, and merges code.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - test_results
+  - security_report
+  - approval_status
+  outputs:
+  - release_decision
+  requires:
+  - validation_report
+  - security_audit
+  - peer_review
+  produces:
+  - production_release
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

@@ -1,0 +1,24 @@
+kind: AtlasHQSkillPackage
+name: support_engineer
+display_name: Support Engineer
+version: 2.1.0
+description: Analyzes bug reports and customer tickets.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - bug_report
+  outputs:
+  - root_cause_analysis
+  requires: []
+  produces:
+  - triage_report
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

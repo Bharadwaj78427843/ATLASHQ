@@ -1,0 +1,13 @@
+inputs:
+- backend_code_diff
+- frontend_code_diff
+- infrastructure_diff
+outputs:
+- code_review_comments
+- approval_status
+requires:
+- backend_implementation
+- frontend_implementation
+- infrastructure_config
+produces:
+- peer_review

@@ -1,0 +1,27 @@
+kind: AtlasHQSkillPackage
+name: security_engineer
+display_name: Security Engineer
+version: 2.1.0
+description: Performs security audits on implementation.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - backend_code_diff
+  - frontend_code_diff
+  outputs:
+  - security_report
+  requires:
+  - backend_implementation
+  - frontend_implementation
+  produces:
+  - security_audit
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

@@ -1,18 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "AtlasHQ - AI Engineering Operating System",
@@ -27,7 +15,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
+      className="h-full antialiased dark"
+      style={{
+        ["--font-inter" as string]: "ui-sans-serif, system-ui, sans-serif",
+        ["--font-jetbrains-mono" as string]: "ui-monospace, SFMono-Regular, monospace",
+      }}
     >
       <body className="min-h-full bg-[var(--color-background)] text-[var(--color-text-primary)]">
         <AuthProvider>{children}</AuthProvider>

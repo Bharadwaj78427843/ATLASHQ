@@ -1,0 +1,16 @@
+name: engineering_manager_e2e_readiness
+checklist:
+  - id: schema_validation
+    requirement: Skill package validates against manifest and artifact schemas.
+
+  - id: loader_resolution
+    requirement: Runtime loader resolves skill.yaml artifact references successfully.
+
+  - id: permission_enforcement
+    requirement: Tool invocation is blocked when not declared in tools.yaml.
+
+  - id: structured_output
+    requirement: Runtime returns outputs matching declared interfaces.outputs.
+
+  - id: workflow_execution
+    requirement: Workflow runs from sprint_discovery through release_gate without contract violations.

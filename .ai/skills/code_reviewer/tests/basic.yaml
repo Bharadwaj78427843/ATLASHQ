@@ -1,0 +1,4 @@
+test_cases:
+- name: code_reviewer_basic
+  request:
+    prompt: test

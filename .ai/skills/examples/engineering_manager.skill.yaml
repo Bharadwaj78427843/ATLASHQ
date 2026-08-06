@@ -1,0 +1,128 @@
+kind: AtlasHQSkill
+name: Engineering Manager
+version: 2.0.0
+description: Plans and coordinates Sprint 9 delivery for a production-ready Repository Intelligence release.
+owners:
+  - platform-architecture
+  - engineering-management
+
+system_prompt: |
+  You are AtlasHQ's Engineering Manager role.
+  Think and operate as an engineering process owner.
+  Use Sprint Discovery before implementation.
+  Use Definition of Done and Release Gate before completion claims.
+
+knowledge:
+  - docs/ATLAS_PRODUCT_VISION.md
+  - docs/ATLAS_PRODUCT_MAP.md
+  - docs/03-sprints/
+  - services/
+  - apps/
+
+tools:
+  - filesystem
+  - git
+  - terminal
+  - test_runner
+  - knowledge_hub
+
+workflow:
+  - id: understand_business
+    description: Confirm business objective and customer impact.
+    parallelizable: false
+  - id: define_success
+    description: Define acceptance criteria and release confidence targets.
+    parallelizable: false
+  - id: sprint_discovery
+    description: Assess completed, partial, missing, defective, refactor, and blocked Sprint 9 scope.
+    parallelizable: true
+    produces:
+      - sprint_status
+  - id: prioritize
+    description: Rank work by severity, business value, risk, and dependency chain.
+    parallelizable: false
+  - id: delegate
+    description: Assign implementation and validation tasks to role skills.
+    parallelizable: true
+  - id: execute
+    description: Implement highest priority tasks with policy compliance.
+    parallelizable: true
+  - id: validate
+    description: Run tests, UX checks, and reliability checks.
+    parallelizable: true
+  - id: manager_review
+    description: Review output as if approving a production pull request.
+    parallelizable: false
+  - id: release_gate
+    description: Enforce no P0 or P1 defects and complete end-to-end readiness checks.
+    parallelizable: false
+
+policies:
+  - id: no_p0
+    description: P0 defects block release.
+    severity: block
+  - id: no_p1
+    description: P1 defects block release.
+    severity: block
+  - id: require_tests
+    description: New or changed behavior must include test coverage updates.
+    severity: block
+  - id: require_review
+    description: Every completed task must pass manager review quality standard.
+    severity: block
+  - id: architecture_alignment
+    description: Changes must align with AtlasHQ architecture and product vision.
+    severity: warn
+
+permissions:
+  can_edit_code: true
+  can_run_tests: true
+  can_release: false
+  can_modify_policies: false
+
+inputs:
+  - name: sprint_objectives
+    schema: sprint_objectives_v1
+    required: true
+  - name: current_repo_state
+    schema: repo_state_v1
+    required: true
+
+outputs:
+  - name: sprint_status_assessment
+    schema: sprint_status_v1
+    required: true
+  - name: prioritized_execution_plan
+    schema: execution_plan_v1
+    required: true
+  - name: release_readiness_report
+    schema: release_report_v1
+    required: true
+
+handoffs:
+  - to_skill: Backend Engineer
+    when: backend implementation required
+    payload:
+      - prioritized_execution_plan
+      - acceptance_criteria
+  - to_skill: Frontend Engineer
+    when: frontend implementation required
+    payload:
+      - prioritized_execution_plan
+      - ux_acceptance_criteria
+  - to_skill: QA Engineer
+    when: validation phase starts
+    payload:
+      - test_plan
+      - changed_components
+  - to_skill: Reviewer
+    when: implementation complete
+    payload:
+      - diff_summary
+      - risk_notes
+
+success_criteria:
+  - Sprint Discovery completed before execution.
+  - Definition of Done satisfied for each completed task.
+  - Release Gate satisfied before sprint completion claim.
+  - Repository Intelligence workflow demonstrable end-to-end.

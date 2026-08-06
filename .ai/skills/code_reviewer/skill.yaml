@@ -1,0 +1,30 @@
+kind: AtlasHQSkillPackage
+name: code_reviewer
+display_name: Code Reviewer
+version: 2.1.0
+description: Performs static analysis and peer review of all code diffs.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - backend_code_diff
+  - frontend_code_diff
+  - infrastructure_diff
+  outputs:
+  - code_review_comments
+  - approval_status
+  requires:
+  - backend_implementation
+  - frontend_implementation
+  - infrastructure_config
+  produces:
+  - peer_review
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

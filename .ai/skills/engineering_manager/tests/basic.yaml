@@ -1,0 +1,13 @@
+name: engineering_manager_basic_contract
+assertions:
+  - id: has_required_artifacts
+    description: Skill package references prompt, workflow, policies, and tools artifacts.
+
+  - id: has_blocking_release_policies
+    description: Policy set includes P0 and P1 release blockers.
+
+  - id: has_release_gate_step
+    description: Workflow contains a release_gate step.
+
+  - id: has_required_interfaces
+    description: Skill declares inputs, outputs, requires, and produces interfaces.

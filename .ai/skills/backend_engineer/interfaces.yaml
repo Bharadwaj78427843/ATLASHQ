@@ -1,0 +1,9 @@
+inputs:
+- architecture_document
+- api_spec
+outputs:
+- backend_code_diff
+requires:
+- system_design
+produces:
+- backend_implementation

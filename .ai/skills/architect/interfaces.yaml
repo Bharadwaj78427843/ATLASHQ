@@ -1,0 +1,9 @@
+inputs:
+- execution_plan
+outputs:
+- architecture_document
+- api_spec
+requires:
+- engineering_plan
+produces:
+- system_design

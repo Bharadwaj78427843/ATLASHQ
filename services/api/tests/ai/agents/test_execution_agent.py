@@ -16,7 +16,7 @@ from app.ai.utils.bootstrap import build_default_registry
 async def test_execution_agent_executes_plan_steps():
     registry = build_default_registry()
     config = AIConfig(
-        knowledge={"provider": "native"},
+        knowledge={"provider": "mock"},
         documents={"provider": "mock"},
         embeddings={"provider": "mock"},
         vectorstore={"provider": "mock"},

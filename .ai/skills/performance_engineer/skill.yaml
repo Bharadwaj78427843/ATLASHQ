@@ -1,0 +1,25 @@
+kind: AtlasHQSkillPackage
+name: performance_engineer
+display_name: Performance Engineer
+version: 2.1.0
+description: Analyzes system performance and scalability.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - backend_code_diff
+  outputs:
+  - performance_report
+  requires:
+  - backend_implementation
+  produces:
+  - performance_audit
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

@@ -1,0 +1,25 @@
+kind: AtlasHQSkillPackage
+name: devops_engineer
+display_name: DevOps Engineer
+version: 2.1.0
+description: Configures deployment pipelines and infrastructure.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - architecture_document
+  outputs:
+  - infrastructure_diff
+  requires:
+  - system_design
+  produces:
+  - infrastructure_config
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

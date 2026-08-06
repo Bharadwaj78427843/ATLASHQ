@@ -1,0 +1,19 @@
+kind: AtlasHQSkillPackage
+name: ai_engineer
+display_name: Ai Engineer
+version: 1.0.0
+description: AtlasHQ Ai Engineer role
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs: []
+  outputs: []
+  requires: []
+  produces: []
+tests:
+- tests/basic.yaml

@@ -9,6 +9,10 @@ from app.routers import projects as projects_router
 from app.routers import environments as environments_router
 from app.routers import knowledge as knowledge_router
 from app.routers import ai as ai_router
+from app.routers import skills as skills_router
+from app.routers import ai_orchestration
+from app.routers import ai_approvals
+from app.routers import ai_memory
 
 from contextlib import asynccontextmanager
 from app.ai.config.loader import load_ai_config
@@ -23,6 +27,10 @@ from app.ai.prompts.manager import PromptManager
 from app.ai.sdk.sdk import AtlasAISDK
 from app.ai.tools import ToolExecutor, ToolRegistry, build_default_tools
 from app.ai.utils.bootstrap import activate_from_config, build_default_registry
+from app.ai.skills_runtime import build_skill_runtime
+from app.ai.skills_runtime.orchestrator import SkillOrchestrator
+from app.ai.skills_runtime.approval import ApprovalGate
+from app.ai.skills_runtime.handoff import HandoffProtocol
 
 
 @asynccontextmanager
@@ -70,17 +78,32 @@ async def lifespan(app: FastAPI):
         config=runtime_cfg,
     )
 
+    skill_runtime = await build_skill_runtime(factory, telemetry=telemetry, memory_provider=memory_provider)
+
+    handoff_protocol = HandoffProtocol()
+    approval_gate = ApprovalGate()
+    skill_orchestrator = SkillOrchestrator(
+        skill_runtime=skill_runtime,
+        handoff_protocol=handoff_protocol,
+        approval_gate=approval_gate,
+        telemetry=telemetry,
+        memory_provider=memory_provider
+    )
+
     sdk = AtlasAISDK(
         registry=registry,
         factory=factory,
         orchestrator=orchestrator,
         telemetry=telemetry,
         runtime=runtime,
+        skill_runtime=skill_runtime,
         tool_registry=tool_registry,
         tool_executor=tool_executor,
         memory_provider=memory_provider,
+        skill_orchestrator=skill_orchestrator,
+        approval_gate=approval_gate
     )
-            
+
     # Attach to app.state
     app.state.ai_registry = registry
     app.state.ai_config = config
@@ -88,12 +111,14 @@ async def lifespan(app: FastAPI):
     app.state.ai_knowledge_provider = knowledge_provider
     app.state.ai_orchestrator = orchestrator
     app.state.ai_runtime = runtime
+    app.state.ai_skill_runtime = skill_runtime
     app.state.ai_tool_registry = tool_registry
     app.state.ai_tool_executor = tool_executor
     app.state.ai_memory_provider = memory_provider
     app.state.ai_prompt_manager = prompt_manager
     app.state.ai_sdk = sdk
     app.state.ai_telemetry = telemetry
+    app.state.ai_skill_orchestrator = skill_orchestrator
 
     yield
 
@@ -122,6 +147,10 @@ ROUTERS = [
     environments_router.router,
     knowledge_router.router,
     ai_router.router,
+    skills_router.router,
+    ai_orchestration.router,
+    ai_approvals.router,
+    ai_memory.router,
 ]
 
 # Primary routes consumed by the frontend proxy.

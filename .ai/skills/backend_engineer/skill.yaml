@@ -1,0 +1,26 @@
+kind: AtlasHQSkillPackage
+name: backend_engineer
+display_name: Backend Engineer
+version: 2.1.0
+description: Implements server-side business logic, APIs, and database migrations.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - architecture_document
+  - api_spec
+  outputs:
+  - backend_code_diff
+  requires:
+  - system_design
+  produces:
+  - backend_implementation
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

@@ -1,0 +1,7 @@
+inputs:
+- repository
+outputs:
+- knowledge_index
+requires: []
+produces:
+- indexed_repo

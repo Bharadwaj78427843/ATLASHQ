@@ -1,0 +1,24 @@
+kind: AtlasHQSkillPackage
+name: knowledge_engineer
+display_name: Knowledge Engineer
+version: 2.1.0
+description: Curates and indexes repository knowledge.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - repository
+  outputs:
+  - knowledge_index
+  requires: []
+  produces:
+  - indexed_repo
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

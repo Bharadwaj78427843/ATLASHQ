@@ -1,0 +1,26 @@
+kind: AtlasHQSkillPackage
+name: frontend_engineer
+display_name: Frontend Engineer
+version: 2.1.0
+description: Implements UI components, pages, and client-side logic.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - architecture_document
+  - api_spec
+  outputs:
+  - frontend_code_diff
+  requires:
+  - system_design
+  produces:
+  - frontend_implementation
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

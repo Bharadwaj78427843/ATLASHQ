@@ -1,0 +1,27 @@
+kind: AtlasHQSkillPackage
+name: qa_engineer
+display_name: QA Engineer
+version: 2.1.0
+description: Writes and executes automated test suites.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - backend_code_diff
+  - frontend_code_diff
+  outputs:
+  - test_results
+  requires:
+  - backend_implementation
+  - frontend_implementation
+  produces:
+  - validation_report
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []

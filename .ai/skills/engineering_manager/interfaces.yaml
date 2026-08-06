@@ -1,0 +1,9 @@
+inputs:
+- user_request
+- current_repo_state
+outputs:
+- orchestration_graph
+- execution_plan
+requires: []
+produces:
+- engineering_plan

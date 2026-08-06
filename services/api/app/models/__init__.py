@@ -6,10 +6,12 @@ from app.models.workspace import Workspace
 from app.models.project import Project
 from app.models.environment import Environment
 from app.models.knowledge import KnowledgeSource, KnowledgeDocument, DocumentChunk, Embedding, IndexJob
+from app.models.memory import DBMemoryRecord
+from app.models.approval import DBApprovalRequest
 
 __all__ = [
     "Base", "User", "Organization", "OrganizationMember", 
     "Workspace", "Project", "Environment",
     "KnowledgeSource", "KnowledgeDocument", "DocumentChunk", 
-    "Embedding", "IndexJob"
+    "Embedding", "IndexJob", "DBMemoryRecord", "DBApprovalRequest"
 ]

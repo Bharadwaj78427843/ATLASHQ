@@ -17,7 +17,8 @@ import {
   Users,
   Settings as SettingsIcon,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Workflow,
 } from "lucide-react"
 
 type NavItem = {
@@ -66,6 +67,7 @@ export function Sidebar() {
         items: [
           { name: "Atlas Chat", icon: Home, href: "/dashboard" },
           { name: "Agents", icon: Bot, href: "/agents" },
+          { name: "Skills", icon: Workflow, href: "/skills" },
           { name: "Deployments", icon: Rocket, href: "/deployments" },
         ],
       },
@@ -121,15 +123,13 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 flex flex-col h-screen border-r border-[var(--color-border-subtle)] bg-[var(--color-background)]">
-      {/* Brand */}
       <div className="h-16 flex items-center px-6 border-b border-[var(--color-border-subtle)] gap-3 shrink-0">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-primary-base)] to-[var(--color-primary-light)] flex items-center justify-center shadow-[var(--shadow-glow)]">
-          <span className="text-white font-bold text-lg leading-none">⬡</span>
+          <span className="text-white font-bold text-lg leading-none">A</span>
         </div>
         <span className="font-semibold text-lg tracking-tight">AtlasHQ</span>
       </div>
 
-      {/* Organization + workspace context */}
       {activeOrganization && (
         <div className="px-4 py-3 border-b border-[var(--color-border-subtle)] space-y-2">
           <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] bg-[rgba(255,255,255,0.04)] border border-[var(--color-border-subtle)]">
@@ -159,7 +159,7 @@ export function Sidebar() {
           href="/dashboard"
           className="w-full flex items-center justify-center gap-2 bg-[rgba(124,58,237,0.15)] text-[var(--color-primary-light)] border border-[rgba(124,58,237,0.3)] rounded-[var(--radius-md)] py-2 text-sm font-medium hover:bg-[rgba(124,58,237,0.2)] transition-colors"
         >
-          <span className="text-lg leading-none">✦</span> Dashboard
+          <span className="text-lg leading-none">*</span> Dashboard
         </Link>
       </div>
 
@@ -199,7 +199,6 @@ export function Sidebar() {
         ))}
       </div>
 
-      {/* Bottom status */}
       <div className="p-4 border-t border-[var(--color-border-subtle)] shrink-0">
         <div className="bg-[var(--color-panel)] rounded-[var(--radius-md)] p-3 border border-[var(--color-border-subtle)]">
           <div className="flex justify-between items-center mb-1">

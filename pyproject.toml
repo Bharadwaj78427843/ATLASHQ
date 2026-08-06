@@ -14,3 +14,8 @@ dependencies = [
     "pytest-asyncio",
     "aiosqlite"
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "services/api"
+]

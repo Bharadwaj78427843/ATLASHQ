@@ -1,0 +1,8 @@
+inputs:
+- architecture_document
+outputs:
+- infrastructure_diff
+requires:
+- system_design
+produces:
+- infrastructure_config

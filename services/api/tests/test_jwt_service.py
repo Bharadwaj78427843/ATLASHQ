@@ -1,7 +1,7 @@
 """
 tests/test_jwt_service.py
 
-ATLAS-005 — Unit tests for JWTService.
+ATLAS-005 - Unit tests for JWTService.
 Uses real encoding/decoding with a test SECRET_KEY via monkeypatch.
 """
 import pytest
@@ -70,7 +70,6 @@ def test_garbage_token_raises_401() -> None:
 def test_expired_token_raises_401() -> None:
     """Forge an already-expired token and confirm it is rejected."""
     from datetime import datetime, timedelta, timezone
-    from jose import jwt as jose_jwt
 
     settings = get_settings()
     past = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -78,11 +77,9 @@ def test_expired_token_raises_401() -> None:
         "sub": TEST_SUBJECT,
         "type": "access",
         "iat": past,
-        "exp": past,  # already in the past
+        "exp": past,
     }
-    expired_token = jose_jwt.encode(
-        payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
+    expired_token = JWTService._encode(payload)
 
     with pytest.raises(HTTPException) as exc_info:
         JWTService.decode_token(expired_token)

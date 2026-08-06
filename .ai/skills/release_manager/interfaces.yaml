@@ -1,0 +1,12 @@
+inputs:
+- test_results
+- security_report
+- approval_status
+outputs:
+- release_decision
+requires:
+- validation_report
+- security_audit
+- peer_review
+produces:
+- production_release

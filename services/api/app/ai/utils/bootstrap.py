@@ -73,6 +73,7 @@ def build_default_registry() -> ProviderRegistry:
 
     # ── Memory ───────────────────────────────────────────────────────────
     registry.register(_CAT.MEMORY, "mock", module_path="app.ai.memory.mock:MockMemoryProvider")
+    registry.register(_CAT.MEMORY, "org_memory", module_path="app.ai.memory.provider:OrgMemoryProvider")
     registry.register(_CAT.MEMORY, "redis", module_path="app.ai.memory.stubs:RedisMemoryProvider")
     registry.register(_CAT.MEMORY, "filesystem", module_path="app.ai.memory.stubs:FilesystemMemoryProvider")
 

@@ -1,0 +1,4 @@
+test_cases:
+- name: release_manager_basic
+  request:
+    prompt: test

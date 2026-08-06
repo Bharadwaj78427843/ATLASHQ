@@ -1,0 +1,12 @@
+inputs:
+- architecture_document
+- backend_code_diff
+- frontend_code_diff
+outputs:
+- documentation_diff
+requires:
+- system_design
+- backend_implementation
+- frontend_implementation
+produces:
+- updated_docs

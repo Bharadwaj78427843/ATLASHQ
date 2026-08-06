@@ -1,0 +1,10 @@
+inputs:
+- backend_code_diff
+- frontend_code_diff
+outputs:
+- test_results
+requires:
+- backend_implementation
+- frontend_implementation
+produces:
+- validation_report

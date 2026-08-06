@@ -1,0 +1,27 @@
+kind: AtlasHQSkillPackage
+name: engineering_manager
+display_name: Engineering Manager
+version: 2.1.0
+description: Analyzes requirements and dynamically generates the OrchestrationGraph
+  for the engineering team.
+owners:
+- engineering-org
+artifacts:
+  prompt: prompt.md
+  workflow: workflow.yaml
+  policies: policies.yaml
+  tools: tools.yaml
+interfaces:
+  inputs:
+  - user_request
+  - current_repo_state
+  outputs:
+  - orchestration_graph
+  - execution_plan
+  requires: []
+  produces:
+  - engineering_plan
+knowledge: []
+handoffs: []
+tests: []
+success_criteria: []
